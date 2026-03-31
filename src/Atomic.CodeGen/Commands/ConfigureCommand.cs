@@ -37,7 +37,7 @@ public static class ConfigureCommand
 			{
 				AnsiConsole.Clear();
 				ShowCurrentConfig(config, configPath, hasChanges);
-				string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").PageSize(16).AddChoices("Edit Analyzer Mode", "Edit Included Projects", "Edit Verbose Logging", "Edit Orphan Tracking", "Edit Backup Cap", "Edit Formatting", "Edit Scan Paths", "Edit Exclude Paths", "─────────────────", "Reset to Defaults", hasChanges ? "[green]Save Changes[/]" : "[dim]Save (no changes)[/]", "Exit without Saving"));
+				string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").PageSize(16).AddChoices("Edit Analyzer Mode", "Edit Included Projects", "Edit Verbose Logging", "Edit Orphan Tracking", "Edit Include Timestamp", "Edit Backup Cap", "Edit Formatting", "Edit Scan Paths", "Edit Exclude Paths", "─────────────────", "Reset to Defaults", hasChanges ? "[green]Save Changes[/]" : "[dim]Save (no changes)[/]", "Exit without Saving"));
 				if (text.Contains("Exit"))
 				{
 					if (!hasChanges || AnsiConsole.Confirm("[yellow]You have unsaved changes. Exit anyway?[/]", defaultValue: false))
@@ -91,6 +91,11 @@ public static class ConfigureCommand
 					config.TrackOrphans = EditBoolSetting("Orphan Tracking", config.TrackOrphans, "Automatically clean up generated files when source is deleted");
 					hasChanges = true;
 				}
+				else if (text.Contains("Timestamp"))
+				{
+					config.IncludeTimestamp = EditBoolSetting("Include Timestamp", config.IncludeTimestamp, "Add 'Generated at' timestamp to file headers (disable for cleaner git diffs)");
+					hasChanges = true;
+				}
 				else if (text.Contains("Backup Cap"))
 				{
 					config.BackupCap = EditBackupCap(config.BackupCap);
@@ -135,6 +140,7 @@ public static class ConfigureCommand
 		table.AddRow("Included Projects", text2);
 		table.AddRow("Verbose Logging", config.Verbose ? "[green]Enabled[/]" : "[dim]Disabled[/]");
 		table.AddRow("Orphan Tracking", config.TrackOrphans ? "[green]Enabled[/]" : "[dim]Disabled[/]");
+		table.AddRow("Include Timestamp", config.IncludeTimestamp ? "[green]Enabled[/]" : "[dim]Disabled[/]");
 		table.AddRow("Backup Cap", (config.BackupCap == 0) ? "[yellow]Unlimited[/]" : $"[cyan]{config.BackupCap}[/] backups");
 		table.AddRow("Indentation", config.Formatting.UseTabs ? "Tabs" : $"Spaces ({config.Formatting.IndentSize})");
 		AnsiConsole.Write(table);
