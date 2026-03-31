@@ -184,12 +184,15 @@ public sealed class EntityAPIGenerator
 		handler.AppendLiteral(" * Source file path: ");
 		handler.AppendFormatted(_definition.SourceFile);
 		stringBuilder3.AppendLine(ref handler);
-		stringBuilder = sb;
-		StringBuilder stringBuilder4 = stringBuilder;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(17, 1, stringBuilder);
-		handler.AppendLiteral(" * Generated at: ");
-		handler.AppendFormatted(DateTime.Now, "yyyy-MM-dd HH:mm:ss");
-		stringBuilder4.AppendLine(ref handler);
+		if (_config.IncludeTimestamp)
+		{
+			stringBuilder = sb;
+			StringBuilder stringBuilder4 = stringBuilder;
+			handler = new StringBuilder.AppendInterpolatedStringHandler(17, 1, stringBuilder);
+			handler.AppendLiteral(" * Generated at: ");
+			handler.AppendFormatted(DateTime.Now, "yyyy-MM-dd HH:mm:ss");
+			stringBuilder4.AppendLine(ref handler);
+		}
 		if (_config.TrackOrphans)
 		{
 			sb.AppendLine(" * AtomicGenerator: track file");

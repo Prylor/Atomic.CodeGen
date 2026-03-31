@@ -30,6 +30,9 @@ public sealed class CodeGenConfig
 	[JsonPropertyName("trackOrphans")]
 	public bool TrackOrphans { get; set; } = true;
 
+	[JsonPropertyName("includeTimestamp")]
+	public bool IncludeTimestamp { get; set; } = true;
+
 	[JsonPropertyName("formatting")]
 	public FormattingOptions Formatting { get; set; } = new FormattingOptions();
 

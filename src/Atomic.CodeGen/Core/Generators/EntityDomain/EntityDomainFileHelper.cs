@@ -18,7 +18,10 @@ public static class EntityDomainFileHelper
 		text += " * Code generation. Don't modify!\n";
 		text = text + " * Generated from: " + Path.GetFileName(definition.SourceFile) + "\n";
 		text = text + " * Source file path: " + definition.SourceFile + "\n";
-		text += $" * Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n";
+		if (config.IncludeTimestamp)
+		{
+			text += $" * Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n";
+		}
 		if (config.TrackOrphans)
 		{
 			text += " * AtomicGenerator: track file\n";
