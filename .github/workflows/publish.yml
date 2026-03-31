@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 env:
   PROJECT: src/Atomic.CodeGen/Atomic.CodeGen.csproj
@@ -33,8 +34,11 @@ jobs:
       - name: Pack
         run: dotnet pack ${{ env.PROJECT }} --configuration Release --no-build --output ./nupkg /p:Version=${{ steps.version.outputs.VERSION }}
 
-      - name: Push to NuGet
+      - name: Push to NuGet.org
         run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Push to GitHub Packages
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
 
   binaries:
     name: Build ${{ matrix.name }}
