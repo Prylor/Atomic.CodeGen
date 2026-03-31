@@ -21,6 +21,10 @@
     <PackageTags>atomic entities codegen unity roslyn source-generator</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryType>git</RepositoryType>
+
+    <!-- Self-contained publish settings -->
+    <TrimMode>partial</TrimMode>
+    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
