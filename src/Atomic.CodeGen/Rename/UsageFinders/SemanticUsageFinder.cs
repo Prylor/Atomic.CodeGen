@@ -83,12 +83,12 @@ public sealed class SemanticUsageFinder
 				results.Add(CreateUsageMatch(fieldUsage, tagName, newTagName, "TagField"));
 			}
 		}
-		string[] tagMethods = new string[3]
-		{
+		string[] tagMethods =
+		[
 			"Has" + tagName + "Tag",
 			"Add" + tagName + "Tag",
 			"Del" + tagName + "Tag"
-		};
+		];
 		foreach (string methodName in tagMethods)
 		{
 			IMethodSymbol methodSymbol = apiSymbol.GetMembers(methodName).OfType<IMethodSymbol>().FirstOrDefault();
