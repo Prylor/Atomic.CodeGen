@@ -14,9 +14,9 @@ public static class ScanCommand
 {
 	public static Command Create()
 	{
-		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
-		Option<bool> option2 = new Option<bool>(new string[2] { "--verbose", "-v" }, () => false, "Enable verbose logging");
-		Command command = new Command("scan", "Scan for Entity API definitions") { option, option2 };
+		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
+		Option<bool> verboseOption = new Option<bool>(["--verbose", "-v"], () => false, "Enable verbose logging");
+		Command command = new Command("scan", "Scan for Entity API definitions") { projectOption, verboseOption };
 		command.SetHandler(async delegate(string projectPath, bool verbose)
 		{
 			Logger.SetVerbose(verbose);
@@ -108,7 +108,7 @@ public static class ScanCommand
 				Logger.LogSuccess($"Found {definitions.Count} valid Entity API definitions");
 			}
 			Console.ResetColor();
-		}, option, option2);
+		}, projectOption, verboseOption);
 		return command;
 	}
 

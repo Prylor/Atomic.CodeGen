@@ -165,14 +165,12 @@ public sealed class SemanticUsageFinder
 			Logger.LogWarning("Could not find behaviour class '" + behaviourName + "' for semantic analysis");
 			return results;
 		}
-		ImmutableArray<Location>.Enumerator enumerator = namedTypeSymbol.Locations.GetEnumerator();
-		while (enumerator.MoveNext())
+		foreach (Location location in namedTypeSymbol.Locations)
 		{
-			Location current = enumerator.Current;
-			if (current.IsInSource)
+			if (location.IsInSource)
 			{
-				TextSpan sourceSpan = current.SourceSpan;
-				SyntaxTree sourceTree = current.SourceTree;
+				TextSpan sourceSpan = location.SourceSpan;
+				SyntaxTree sourceTree = location.SourceTree;
 				if (sourceTree != null)
 				{
 					SourceText sourceText = sourceTree.GetText();
@@ -193,22 +191,18 @@ public sealed class SemanticUsageFinder
 				}
 			}
 		}
-		ImmutableArray<IMethodSymbol>.Enumerator enumerator2 = namedTypeSymbol.Constructors.GetEnumerator();
-		while (enumerator2.MoveNext())
+		foreach (IMethodSymbol constructor in namedTypeSymbol.Constructors)
 		{
-			IMethodSymbol current2 = enumerator2.Current;
-			if (current2.IsImplicitlyDeclared)
+			if (constructor.IsImplicitlyDeclared)
 			{
 				continue;
 			}
-			enumerator = current2.Locations.GetEnumerator();
-			while (enumerator.MoveNext())
+			foreach (Location ctorLocation in constructor.Locations)
 			{
-				Location current3 = enumerator.Current;
-				if (current3.IsInSource)
+				if (ctorLocation.IsInSource)
 				{
-					TextSpan sourceSpan2 = current3.SourceSpan;
-					SyntaxTree sourceTree2 = current3.SourceTree;
+					TextSpan sourceSpan2 = ctorLocation.SourceSpan;
+					SyntaxTree sourceTree2 = ctorLocation.SourceTree;
 					if (sourceTree2 != null)
 					{
 						SourceText ctorSourceText = sourceTree2.GetText();

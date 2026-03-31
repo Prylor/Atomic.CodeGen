@@ -15,14 +15,12 @@ public static class AttributeParser
 		{
 			return dictionary;
 		}
-		SeparatedSyntaxList<AttributeArgumentSyntax>.Enumerator enumerator = attribute.ArgumentList.Arguments.GetEnumerator();
-		while (enumerator.MoveNext())
+		foreach (AttributeArgumentSyntax argument in attribute.ArgumentList.Arguments)
 		{
-			AttributeArgumentSyntax current = enumerator.Current;
-			string argumentName = current.NameEquals?.Name.Identifier.Text;
+			string argumentName = argument.NameEquals?.Name.Identifier.Text;
 			if (argumentName != null)
 			{
-				object value = ExtractValue(current.Expression);
+				object value = ExtractValue(argument.Expression);
 				dictionary[argumentName] = value;
 			}
 		}

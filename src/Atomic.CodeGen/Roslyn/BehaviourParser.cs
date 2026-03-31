@@ -162,12 +162,10 @@ public sealed class BehaviourParser
 		{
 			return parameters;
 		}
-		SeparatedSyntaxList<ParameterSyntax>.Enumerator enumerator = selectedConstructor.ParameterList.Parameters.GetEnumerator();
-		while (enumerator.MoveNext())
+		foreach (ParameterSyntax param in selectedConstructor.ParameterList.Parameters)
 		{
-			ParameterSyntax current = enumerator.Current;
-			string paramName = current.Identifier.Text;
-			string paramType = current.Type?.ToString() ?? "object";
+			string paramName = param.Identifier.Text;
+			string paramType = param.Type?.ToString() ?? "object";
 			parameters.Add((paramName, paramType));
 		}
 		return parameters;

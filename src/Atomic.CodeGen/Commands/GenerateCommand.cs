@@ -18,9 +18,9 @@ public static class GenerateCommand
 {
 	public static Command Create()
 	{
-		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, Directory.GetCurrentDirectory, "Path to project root");
-		Option<bool> option2 = new Option<bool>(new string[2] { "--verbose", "-v" }, () => false, "Enable verbose logging");
-		Command command = new Command("generate", "Generate Entity API files") { option, option2 };
+		Option<string> projectOption = new Option<string>(["--project", "-p"], Directory.GetCurrentDirectory, "Path to project root");
+		Option<bool> verboseOption = new Option<bool>(["--verbose", "-v"], () => false, "Enable verbose logging");
+		Command command = new Command("generate", "Generate Entity API files") { projectOption, verboseOption };
 		command.SetHandler(async delegate(string projectPath, bool verbose)
 		{
 			Logger.SetVerbose(verbose);
@@ -168,7 +168,7 @@ public static class GenerateCommand
 				Logger.LogSuccess($"Total: {totalGenerated}/{totalDefinitions} in {stopwatch.ElapsedMilliseconds}ms");
 				Console.ResetColor();
 			}
-		}, option, option2);
+		}, projectOption, verboseOption);
 		return command;
 	}
 

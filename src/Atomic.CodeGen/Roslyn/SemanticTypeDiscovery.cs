@@ -161,10 +161,9 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		{
 			return false;
 		}
-		SeparatedSyntaxList<BaseTypeSyntax>.Enumerator enumerator = classDecl.BaseList.Types.GetEnumerator();
-		while (enumerator.MoveNext())
+		foreach (BaseTypeSyntax baseType in classDecl.BaseList.Types)
 		{
-			string baseTypeName = enumerator.Current.Type.ToString();
+			string baseTypeName = baseType.Type.ToString();
 			if (baseTypeName == "Attribute" || baseTypeName == "System.Attribute")
 			{
 				return true;
@@ -219,10 +218,9 @@ public sealed class SemanticTypeDiscovery : IDisposable
 
 	private bool HasAttribute(INamedTypeSymbol symbol, string fullName, string shortName, bool hasUsing)
 	{
-		ImmutableArray<AttributeData>.Enumerator enumerator = symbol.GetAttributes().GetEnumerator();
-		while (enumerator.MoveNext())
+		foreach (AttributeData attribute in symbol.GetAttributes())
 		{
-			string attributeFullName = enumerator.Current.AttributeClass?.ToDisplayString();
+			string attributeFullName = attribute.AttributeClass?.ToDisplayString();
 			if (attributeFullName != null)
 			{
 				if (attributeFullName == fullName)
@@ -391,12 +389,10 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		}
 		if (selectedConstructor != null && selectedConstructor.ParameterList.Parameters.Count > 0)
 		{
-			SeparatedSyntaxList<ParameterSyntax>.Enumerator enumerator = selectedConstructor.ParameterList.Parameters.GetEnumerator();
-			while (enumerator.MoveNext())
+			foreach (ParameterSyntax param in selectedConstructor.ParameterList.Parameters)
 			{
-				ParameterSyntax current = enumerator.Current;
-				string paramName = current.Identifier.Text;
-				string paramType = current.Type?.ToString() ?? "object";
+				string paramName = param.Identifier.Text;
+				string paramType = param.Type?.ToString() ?? "object";
 				parameters.Add((paramName, paramType));
 			}
 		}
@@ -796,7 +792,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 			string normalizedPattern = excludePattern.Replace('\\', '/');
 			if (normalizedPattern.Contains("**"))
 			{
-				string[] segments = normalizedPattern.Split(new string[1] { "**" }, StringSplitOptions.None);
+				string[] segments = normalizedPattern.Split(["**"], StringSplitOptions.None);
 				if (segments.Length == 2)
 				{
 					string prefixPattern = segments[0].TrimEnd('/');

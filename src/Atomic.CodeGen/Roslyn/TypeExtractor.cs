@@ -28,11 +28,9 @@ public static class TypeExtractor
 		foreach (FieldDeclarationSyntax fieldDecl in valuesClass.Members.OfType<FieldDeclarationSyntax>())
 		{
 			string fieldTypeName = fieldDecl.Declaration.Type.ToString();
-			SeparatedSyntaxList<VariableDeclaratorSyntax>.Enumerator enumerator2 = fieldDecl.Declaration.Variables.GetEnumerator();
-			while (enumerator2.MoveNext())
+			foreach (VariableDeclaratorSyntax variable in fieldDecl.Declaration.Variables)
 			{
-				VariableDeclaratorSyntax current2 = enumerator2.Current;
-				dictionary[current2.Identifier.Text] = fieldTypeName;
+				dictionary[variable.Identifier.Text] = fieldTypeName;
 			}
 		}
 		foreach (PropertyDeclarationSyntax propertyDecl in valuesClass.Members.OfType<PropertyDeclarationSyntax>())

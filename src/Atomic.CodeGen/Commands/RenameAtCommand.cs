@@ -30,27 +30,27 @@ public static class RenameAtCommand
 
 	public static Command Create()
 	{
-		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
-		Option<string> option2 = new Option<string>(new string[2] { "--file", "-f" }, "Path to the source file")
+		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
+		Option<string> fileOption = new Option<string>(["--file", "-f"], "Path to the source file")
 		{
 			IsRequired = true
 		};
-		Option<int> option3 = new Option<int>(new string[2] { "--line", "-l" }, "1-based line number")
+		Option<int> lineOption = new Option<int>(["--line", "-l"], "1-based line number")
 		{
 			IsRequired = true
 		};
-		Option<int> option4 = new Option<int>(new string[2] { "--column", "-c" }, "1-based column number")
+		Option<int> columnOption = new Option<int>(["--column", "-c"], "1-based column number")
 		{
 			IsRequired = true
 		};
-		Option<string> option5 = new Option<string>(new string[1] { "--to" }, "New name for the symbol")
+		Option<string> toOption = new Option<string>(["--to"], "New name for the symbol")
 		{
 			IsRequired = true
 		};
-		Option<bool> option6 = new Option<bool>(new string[2] { "--dry-run", "-d" }, () => false, "Preview changes without applying them");
-		Option<bool> option7 = new Option<bool>(new string[2] { "--verbose", "-v" }, () => false, "Enable verbose logging");
-		Option<bool> option8 = new Option<bool>(new string[1] { "--json" }, () => false, "Output results as JSON (for IDE integration)");
-		Command command = new Command("rename-at", "Rename symbol at cursor position (for IDE integration)") { option, option2, option3, option4, option5, option6, option7, option8 };
+		Option<bool> dryRunOption = new Option<bool>(["--dry-run", "-d"], () => false, "Preview changes without applying them");
+		Option<bool> verboseOption = new Option<bool>(["--verbose", "-v"], () => false, "Enable verbose logging");
+		Option<bool> jsonOption = new Option<bool>(["--json"], () => false, "Output results as JSON (for IDE integration)");
+		Command command = new Command("rename-at", "Rename symbol at cursor position (for IDE integration)") { projectOption, fileOption, lineOption, columnOption, toOption, dryRunOption, verboseOption, jsonOption };
 		command.SetHandler(async delegate(string projectPath, string file, int line, int column, string to, bool dryRun, bool verbose, bool json)
 		{
 			Logger.SetVerbose(verbose);
@@ -115,7 +115,7 @@ public static class RenameAtCommand
 					}
 				}
 			}
-		}, option, option2, option3, option4, option5, option6, option7, option8);
+		}, projectOption, fileOption, lineOption, columnOption, toOption, dryRunOption, verboseOption, jsonOption);
 		return command;
 	}
 
@@ -203,7 +203,7 @@ public static class RenameAtCommand
 				string methodName = GetMethodName(invocation);
 				if (methodName != null)
 				{
-					string[] valuePrefixes = new string[7] { "Get", "Set", "Has", "Del", "Add", "TryGet", "Ref" };
+					string[] valuePrefixes = ["Get", "Set", "Has", "Del", "Add", "TryGet", "Ref"];
 					foreach (string prefix in valuePrefixes)
 					{
 						if (methodName.StartsWith(prefix) && methodName.Length > prefix.Length)
@@ -214,7 +214,7 @@ public static class RenameAtCommand
 					}
 					if (methodName.EndsWith("Tag"))
 					{
-						string[] tagPrefixes = new string[3] { "Has", "Add", "Del" };
+						string[] tagPrefixes = ["Has", "Add", "Del"];
 						foreach (string prefix in tagPrefixes)
 						{
 							if (methodName.StartsWith(prefix) && methodName.EndsWith("Tag"))

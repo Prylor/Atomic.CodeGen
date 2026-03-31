@@ -15,15 +15,15 @@ public static class RenameCommand
 {
 	public static Command Create()
 	{
-		Option<string> projectOption = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
-		Option<string?> typeOption = new Option<string>(new string[2] { "--type", "-t" }, "Type to rename: tag, value, behaviour, domain");
-		Option<string?> apiOption = new Option<string>(new string[2] { "--api", "-a" }, "EntityAPI class name (required for tag/value/behaviour)");
-		Option<string?> nameOption = new Option<string>(new string[2] { "--name", "-n" }, "Current symbol name to rename");
-		Option<string?> toOption = new Option<string>(new string[1] { "--to" }, "New name for the symbol");
-		Option<bool> dryRunOption = new Option<bool>(new string[2] { "--dry-run", "-d" }, () => false, "Preview changes without applying them");
-		Option<bool> renameFileOption = new Option<bool>(new string[1] { "--rename-file" }, () => false, "Also rename the source file (for behaviours)");
-		Option<bool> verboseOption = new Option<bool>(new string[2] { "--verbose", "-v" }, () => false, "Enable verbose logging");
-		Option<bool> yesOption = new Option<bool>(new string[2] { "--yes", "-y" }, () => false, "Skip confirmation prompt");
+		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
+		Option<string?> typeOption = new Option<string>(["--type", "-t"], "Type to rename: tag, value, behaviour, domain");
+		Option<string?> apiOption = new Option<string>(["--api", "-a"], "EntityAPI class name (required for tag/value/behaviour)");
+		Option<string?> nameOption = new Option<string>(["--name", "-n"], "Current symbol name to rename");
+		Option<string?> toOption = new Option<string>(["--to"], "New name for the symbol");
+		Option<bool> dryRunOption = new Option<bool>(["--dry-run", "-d"], () => false, "Preview changes without applying them");
+		Option<bool> renameFileOption = new Option<bool>(["--rename-file"], () => false, "Also rename the source file (for behaviours)");
+		Option<bool> verboseOption = new Option<bool>(["--verbose", "-v"], () => false, "Enable verbose logging");
+		Option<bool> yesOption = new Option<bool>(["--yes", "-y"], () => false, "Skip confirmation prompt");
 		Command command = new Command("rename", "Rename EntityAPI symbols (Tags, Values, Behaviours, Domains)") { projectOption, typeOption, apiOption, nameOption, toOption, dryRunOption, renameFileOption, verboseOption, yesOption };
 		command.SetHandler(async delegate(InvocationContext ctx)
 		{

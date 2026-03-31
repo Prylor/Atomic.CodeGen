@@ -17,9 +17,9 @@ public static class ScanDomainsCommand
 {
 	public static Command Create()
 	{
-		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, "Project root directory (defaults to current directory)");
-		Option<bool> option2 = new Option<bool>(new string[2] { "--generate", "-g" }, () => false, "Generate files (default is scan only)");
-		Command command = new Command("scan-domains", "Scan for IEntityDomain implementations") { option, option2 };
+		Option<string> projectOption = new Option<string>(["--project", "-p"], "Project root directory (defaults to current directory)");
+		Option<bool> generateOption = new Option<bool>(["--generate", "-g"], () => false, "Generate files (default is scan only)");
+		Command command = new Command("scan-domains", "Scan for IEntityDomain implementations") { projectOption, generateOption };
 		command.SetHandler(async delegate(string? projectPath, bool generate)
 		{
 			Logger.LogHeader("Atomic CodeGen - Entity Domain Scanner");
@@ -99,7 +99,7 @@ public static class ScanDomainsCommand
 					AnsiConsole.MarkupLine("[dim]Use --generate flag to create files[/]");
 				}
 			}
-		}, option, option2);
+		}, projectOption, generateOption);
 		return command;
 	}
 

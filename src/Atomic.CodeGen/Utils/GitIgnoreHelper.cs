@@ -16,7 +16,7 @@ public static class GitIgnoreHelper
 			return false;
 		}
 		string gitignoreContent = File.ReadAllText(path);
-		string[] lines = gitignoreContent.Split(new string[2] { "\r\n", "\n" }, StringSplitOptions.None);
+		string[] lines = gitignoreContent.Split(["\r\n", "\n"], StringSplitOptions.None);
 		for (int i = 0; i < lines.Length; i++)
 		{
 			string trimmedLine = lines[i].Trim();

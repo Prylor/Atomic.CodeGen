@@ -15,8 +15,8 @@ public static class ConfigureCommand
 {
 	public static Command Create()
 	{
-		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
-		Command command = new Command("configure", "View and modify configuration settings") { option };
+		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
+		Command command = new Command("configure", "View and modify configuration settings") { projectOption };
 		command.SetHandler(async delegate(string projectPath)
 		{
 			string configPath = Path.Combine(projectPath, "atomic-codegen.json");
@@ -134,7 +134,7 @@ public static class ConfigureCommand
 					hasChanges = true;
 				}
 			}
-		}, option);
+		}, projectOption);
 		return command;
 	}
 
@@ -440,7 +440,7 @@ public static class ConfigureCommand
 					Thread.Sleep(1000);
 					break;
 				}
-				string patternToRemove = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select pattern to remove:").AddChoices(patterns.Concat(new string[1] { "[Cancel]" })));
+				string patternToRemove = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select pattern to remove:").AddChoices(patterns.Concat(["[Cancel]"])));
 				if (patternToRemove != "[Cancel]")
 				{
 					patterns.Remove(patternToRemove);

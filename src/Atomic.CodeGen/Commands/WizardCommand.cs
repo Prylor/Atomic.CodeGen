@@ -15,8 +15,8 @@ public static class WizardCommand
 {
 	public static Command Create()
 	{
-		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
-		Command command = new Command("wizard", "Interactive setup wizard - complete onboarding experience") { option };
+		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
+		Command command = new Command("wizard", "Interactive setup wizard - complete onboarding experience") { projectOption };
 		command.SetHandler(async delegate(string projectPath)
 		{
 			bool? frameworkCheckResult = await CheckAtomicFrameworkAsync(projectPath);
@@ -25,7 +25,7 @@ public static class WizardCommand
 				ShowIdeSetup();
 				ShowComplete(projectPath);
 			}
-		}, option);
+		}, projectOption);
 		return command;
 	}
 

@@ -54,45 +54,41 @@ public sealed class ImportAnalyzer
 		}
 		if (root is CompilationUnitSyntax compilationUnitSyntax)
 		{
-			SyntaxList<UsingDirectiveSyntax>.Enumerator enumerator = compilationUnitSyntax.Usings.GetEnumerator();
-			while (enumerator.MoveNext())
+			foreach (UsingDirectiveSyntax usingDirective in compilationUnitSyntax.Usings)
 			{
-				UsingDirectiveSyntax current = enumerator.Current;
-				if (current.StaticKeyword.IsKind(SyntaxKind.StaticKeyword))
+				if (usingDirective.StaticKeyword.IsKind(SyntaxKind.StaticKeyword))
 				{
-					fileImports.StaticImports.Add(current.Name?.ToString() ?? string.Empty);
+					fileImports.StaticImports.Add(usingDirective.Name?.ToString() ?? string.Empty);
 				}
-				else if (current.Alias != null)
+				else if (usingDirective.Alias != null)
 				{
-					string aliasName = current.Alias.Name.ToString();
-					string aliasTarget = current.Name?.ToString() ?? string.Empty;
+					string aliasName = usingDirective.Alias.Name.ToString();
+					string aliasTarget = usingDirective.Name?.ToString() ?? string.Empty;
 					fileImports.Aliases[aliasName] = aliasTarget;
 				}
 				else
 				{
-					fileImports.Namespaces.Add(current.Name?.ToString() ?? string.Empty);
+					fileImports.Namespaces.Add(usingDirective.Name?.ToString() ?? string.Empty);
 				}
 			}
 		}
 		foreach (BaseNamespaceDeclarationSyntax namespaceDecl in root.DescendantNodes().OfType<BaseNamespaceDeclarationSyntax>())
 		{
-			SyntaxList<UsingDirectiveSyntax>.Enumerator enumerator = namespaceDecl.Usings.GetEnumerator();
-			while (enumerator.MoveNext())
+			foreach (UsingDirectiveSyntax usingDirective in namespaceDecl.Usings)
 			{
-				UsingDirectiveSyntax current2 = enumerator.Current;
-				if (current2.StaticKeyword.IsKind(SyntaxKind.StaticKeyword))
+				if (usingDirective.StaticKeyword.IsKind(SyntaxKind.StaticKeyword))
 				{
-					fileImports.StaticImports.Add(current2.Name?.ToString() ?? string.Empty);
+					fileImports.StaticImports.Add(usingDirective.Name?.ToString() ?? string.Empty);
 				}
-				else if (current2.Alias != null)
+				else if (usingDirective.Alias != null)
 				{
-					string nsAliasName = current2.Alias.Name.ToString();
-					string nsAliasTarget = current2.Name?.ToString() ?? string.Empty;
+					string nsAliasName = usingDirective.Alias.Name.ToString();
+					string nsAliasTarget = usingDirective.Name?.ToString() ?? string.Empty;
 					fileImports.Aliases[nsAliasName] = nsAliasTarget;
 				}
 				else
 				{
-					fileImports.Namespaces.Add(current2.Name?.ToString() ?? string.Empty);
+					fileImports.Namespaces.Add(usingDirective.Name?.ToString() ?? string.Empty);
 				}
 			}
 		}

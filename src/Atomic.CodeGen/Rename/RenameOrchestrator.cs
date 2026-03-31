@@ -100,7 +100,7 @@ public sealed class RenameOrchestrator
 				}
 			}
 			List<string> scanBaseDirectories = (from p in _config.ScanPaths
-				select p.Split(new string[1] { "/**" }, StringSplitOptions.None)[0] into p
+				select p.Split(["/**"], StringSplitOptions.None)[0] into p
 				where !p.Contains("*")
 				select p).Distinct().ToList();
 			List<string> includePatterns = ((scanBaseDirectories.Count > 0) ? scanBaseDirectories.Select((string d) => d.TrimEnd('/', '\\') + "/**/*.cs").ToList() : new List<string> { "**/*.cs" });
@@ -231,7 +231,7 @@ public sealed class RenameOrchestrator
 	private List<string> GetAllCsFiles()
 	{
 		List<string> scanBaseDirectories = (from p in _config.ScanPaths
-			select p.Split(new string[1] { "/**" }, StringSplitOptions.None)[0] into p
+			select p.Split(["/**"], StringSplitOptions.None)[0] into p
 			where !p.Contains("*")
 			select p).Distinct().ToList();
 		List<string> includePatterns = ((scanBaseDirectories.Count > 0) ? scanBaseDirectories.Select((string d) => d.TrimEnd('/', '\\') + "/**/*.cs").ToList() : new List<string> { "**/*.cs" });

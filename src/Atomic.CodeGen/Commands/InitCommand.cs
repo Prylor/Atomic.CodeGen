@@ -14,9 +14,9 @@ public static class InitCommand
 {
 	public static Command Create()
 	{
-		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
-		Option<bool> option2 = new Option<bool>(new string[2] { "--quick", "-q" }, () => false, "Skip interactive setup and use defaults");
-		Command command = new Command("init", "Initialize configuration file (interactive)") { option, option2 };
+		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
+		Option<bool> quickOption = new Option<bool>(["--quick", "-q"], () => false, "Skip interactive setup and use defaults");
+		Command command = new Command("init", "Initialize configuration file (interactive)") { projectOption, quickOption };
 		command.SetHandler(async delegate(string projectPath, bool quick)
 		{
 			AnsiConsole.Write(new FigletText("Atomic CodeGen").LeftJustified().Color(Color.Blue));
@@ -62,7 +62,7 @@ public static class InitCommand
 				AnsiConsole.MarkupLine("[dim]Run [blue]atomic-codegen generate[/] to generate code[/]");
 				AnsiConsole.MarkupLine("[dim]Run [blue]atomic-codegen configure[/] to modify settings[/]");
 			}
-		}, option, option2);
+		}, projectOption, quickOption);
 		return command;
 	}
 

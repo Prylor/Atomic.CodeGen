@@ -13,12 +13,10 @@ public static class ImportExtractor
 		List<string> imports = new List<string>();
 		HashSet<string> excludedNamespaces = new HashSet<string>(excludeImports ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 		HashSet<string> alwaysExcludedNamespaces = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Atomic.Entities", "System.Runtime.CompilerServices", "UnityEditor" };
-		SyntaxList<UsingDirectiveSyntax>.Enumerator enumerator = root.Usings.GetEnumerator();
-		while (enumerator.MoveNext())
+		foreach (UsingDirectiveSyntax usingDirective in root.Usings)
 		{
-			UsingDirectiveSyntax current = enumerator.Current;
-			string namespaceName = current.Name?.ToString();
-			if (!string.IsNullOrWhiteSpace(namespaceName) && !excludedNamespaces.Contains(namespaceName) && !alwaysExcludedNamespaces.Contains(namespaceName) && current.Alias == null && !(current.StaticKeyword.Text == "static"))
+			string namespaceName = usingDirective.Name?.ToString();
+			if (!string.IsNullOrWhiteSpace(namespaceName) && !excludedNamespaces.Contains(namespaceName) && !alwaysExcludedNamespaces.Contains(namespaceName) && usingDirective.Alias == null && !(usingDirective.StaticKeyword.Text == "static"))
 			{
 				imports.Add(namespaceName);
 			}
