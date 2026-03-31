@@ -126,7 +126,7 @@ public sealed class SemanticUsageFinder
 				results.Add(CreateUsageMatch(fieldUsage, valueName, newValueName, "ValueField"));
 			}
 		}
-		string[] valuePrefixes = new string[7] { "Get", "Set", "Has", "Del", "Add", "TryGet", "Ref" };
+		string[] valuePrefixes = ["Get", "Set", "Has", "Del", "Add", "TryGet", "Ref"];
 		foreach (string prefix in valuePrefixes)
 		{
 			string methodName = prefix + valueName;
@@ -236,7 +236,7 @@ public sealed class SemanticUsageFinder
 			string newBaseName = (newBehaviourName.EndsWith("Behaviour", StringComparison.OrdinalIgnoreCase) ? newBehaviourName.Substring(0, newBehaviourName.Length - "Behaviour".Length) : newBehaviourName);
 			string methodSuffix = oldBaseName + "Behaviour";
 			string newMethodSuffix = newBaseName + "Behaviour";
-			string[] behaviourPrefixes = new string[5] { "Has", "Get", "Add", "Del", "TryGet" };
+			string[] behaviourPrefixes = ["Has", "Get", "Add", "Del", "TryGet"];
 			foreach (string prefix in behaviourPrefixes)
 			{
 				string methodName = prefix + methodSuffix;

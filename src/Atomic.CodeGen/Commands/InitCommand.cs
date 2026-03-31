@@ -17,7 +17,7 @@ public static class InitCommand
 		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
 		Option<bool> quickOption = new Option<bool>(["--quick", "-q"], () => false, "Skip interactive setup and use defaults");
 		Command command = new Command("init", "Initialize configuration file (interactive)") { projectOption, quickOption };
-		command.SetHandler(async delegate(string projectPath, bool quick)
+		command.SetHandler(async (string projectPath, bool quick) =>
 		{
 			AnsiConsole.Write(new FigletText("Atomic CodeGen").LeftJustified().Color(Color.Blue));
 			AnsiConsole.Write(new Rule("[bold blue]Configuration Setup[/]"));

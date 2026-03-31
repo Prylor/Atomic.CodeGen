@@ -20,7 +20,7 @@ public static class ScanDomainsCommand
 		Option<string> projectOption = new Option<string>(["--project", "-p"], "Project root directory (defaults to current directory)");
 		Option<bool> generateOption = new Option<bool>(["--generate", "-g"], () => false, "Generate files (default is scan only)");
 		Command command = new Command("scan-domains", "Scan for IEntityDomain implementations") { projectOption, generateOption };
-		command.SetHandler(async delegate(string? projectPath, bool generate)
+		command.SetHandler(async (string? projectPath, bool generate) =>
 		{
 			Logger.LogHeader("Atomic CodeGen - Entity Domain Scanner");
 			if (projectPath == null)

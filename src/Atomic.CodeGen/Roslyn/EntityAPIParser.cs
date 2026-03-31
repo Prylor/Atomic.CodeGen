@@ -44,26 +44,26 @@ public sealed class EntityAPIParser
 			Logger.LogWarning("Failed to parse syntax tree: " + filePath);
 			return null;
 		}
-		ClassDeclarationSyntax classDeclarationSyntax = root.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault((ClassDeclarationSyntax c) => HasEntityAPIAttribute(c, root));
-		if (classDeclarationSyntax == null)
+		ClassDeclarationSyntax apiClass = root.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault((ClassDeclarationSyntax c) => HasEntityAPIAttribute(c, root));
+		if (apiClass == null)
 		{
 			Logger.LogVerbose("No [EntityAPI] attribute found in: " + filePath);
 			return null;
 		}
 		bool hasAtomicEntitiesUsing = root.Usings.Any((UsingDirectiveSyntax u) => u.Name?.ToString() == "Atomic.Entities");
-		AttributeSyntax entityAPIAttribute = GetEntityAPIAttribute(classDeclarationSyntax, hasAtomicEntitiesUsing);
+		AttributeSyntax entityAPIAttribute = GetEntityAPIAttribute(apiClass, hasAtomicEntitiesUsing);
 		if (entityAPIAttribute == null)
 		{
 			Logger.LogWarning("Failed to extract attribute from: " + filePath);
 			return null;
 		}
 		Dictionary<string, object> args = AttributeParser.Parse(entityAPIAttribute);
-		List<string> tags = TypeExtractor.ExtractTags(classDeclarationSyntax);
-		Dictionary<string, string> values = TypeExtractor.ExtractValues(classDeclarationSyntax);
+		List<string> tags = TypeExtractor.ExtractTags(apiClass);
+		Dictionary<string, string> values = TypeExtractor.ExtractValues(apiClass);
 		string[] stringArray = AttributeParser.GetStringArray(args, "ExcludeImports");
 		List<string> imports = ImportExtractor.Extract(root, stringArray);
-		string sourceNamespace = GetNamespace(classDeclarationSyntax);
-		string sourceClassName = classDeclarationSyntax.Identifier.Text;
+		string sourceNamespace = GetNamespace(apiClass);
+		string sourceClassName = apiClass.Identifier.Text;
 		string overrideNamespace = AttributeParser.GetString(args, "Namespace");
 		string overrideClassName = AttributeParser.GetString(args, "ClassName");
 		string overrideDirectory = AttributeParser.GetString(args, "Directory");

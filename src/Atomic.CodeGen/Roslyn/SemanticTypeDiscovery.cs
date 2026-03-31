@@ -602,7 +602,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 
 	private static AttributeSyntax? GetAttribute(ClassDeclarationSyntax classDecl, string shortName, bool hasUsing)
 	{
-		return classDecl.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).FirstOrDefault(delegate(AttributeSyntax a)
+		return classDecl.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).FirstOrDefault((AttributeSyntax a) =>
 		{
 			string attributeName = a.Name.ToString();
 			if (attributeName.Contains("Atomic.Entities." + shortName))

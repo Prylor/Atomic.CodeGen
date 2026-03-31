@@ -17,7 +17,7 @@ public static class ConfigureCommand
 	{
 		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
 		Command command = new Command("configure", "View and modify configuration settings") { projectOption };
-		command.SetHandler(async delegate(string projectPath)
+		command.SetHandler(async (string projectPath) =>
 		{
 			string configPath = Path.Combine(projectPath, "atomic-codegen.json");
 			bool isNew = false;

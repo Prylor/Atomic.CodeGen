@@ -25,7 +25,7 @@ public static class RenameCommand
 		Option<bool> verboseOption = new Option<bool>(["--verbose", "-v"], () => false, "Enable verbose logging");
 		Option<bool> yesOption = new Option<bool>(["--yes", "-y"], () => false, "Skip confirmation prompt");
 		Command command = new Command("rename", "Rename EntityAPI symbols (Tags, Values, Behaviours, Domains)") { projectOption, typeOption, apiOption, nameOption, toOption, dryRunOption, renameFileOption, verboseOption, yesOption };
-		command.SetHandler(async delegate(InvocationContext ctx)
+		command.SetHandler(async (InvocationContext ctx) =>
 		{
 			string? valueForOption = ctx.ParseResult.GetValueForOption(projectOption);
 			string type = ctx.ParseResult.GetValueForOption(typeOption);

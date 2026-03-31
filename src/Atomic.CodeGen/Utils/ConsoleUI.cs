@@ -131,7 +131,7 @@ public static class ConsoleUI
 	{
 		return AnsiConsole.Prompt(
 			new TextPrompt<string>("[bold]New name[/] (current: [yellow]" + oldName + "[/]):")
-				.Validate(delegate(string name)
+				.Validate((string name) =>
 				{
 					if (string.IsNullOrWhiteSpace(name))
 					{

@@ -18,7 +18,7 @@ public sealed class BehaviourParser
 
 	private static readonly HashSet<string> ValidBehaviourBases = new HashSet<string>(StringComparer.Ordinal) { "IEntityBehaviour", "IEntityInit", "IEntityDispose", "IEntityEnable", "IEntityDisable", "IEntityTick", "IEntityFixedTick", "IEntityLateTick", "IEntityGizmos" };
 
-	private static readonly string[] GenericBehaviourPrefixes = new string[8] { "IEntityInit<", "IEntityDispose<", "IEntityEnable<", "IEntityDisable<", "IEntityTick<", "IEntityFixedTick<", "IEntityLateTick<", "IEntityGizmos<" };
+	private static readonly string[] GenericBehaviourPrefixes = ["IEntityInit<", "IEntityDispose<", "IEntityEnable<", "IEntityDisable<", "IEntityTick<", "IEntityFixedTick<", "IEntityLateTick<", "IEntityGizmos<"];
 
 	public async Task<List<BehaviourDefinition>> ParseFileAsync(string filePath)
 	{

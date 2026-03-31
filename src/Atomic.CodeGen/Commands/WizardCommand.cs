@@ -17,7 +17,7 @@ public static class WizardCommand
 	{
 		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
 		Command command = new Command("wizard", "Interactive setup wizard - complete onboarding experience") { projectOption };
-		command.SetHandler(async delegate(string projectPath)
+		command.SetHandler(async (string projectPath) =>
 		{
 			bool? frameworkCheckResult = await CheckAtomicFrameworkAsync(projectPath);
 			if (frameworkCheckResult != false && (!frameworkCheckResult.HasValue || (ShowWelcome() && ShowFeatureEntityApi() && ShowFeatureBehaviours() && ShowFeatureEntityDomain() && ShowFeatureSmartRename())) && await ShowConfigurationWizard(projectPath) != null)
@@ -65,7 +65,7 @@ public static class WizardCommand
 		bool hasEntityDomainBuilder = false;
 		try
 		{
-			await AnsiConsole.Status().Spinner(Spinner.Known.Dots).StartAsync("Analyzing solution...", async delegate
+			await AnsiConsole.Status().Spinner(Spinner.Known.Dots).StartAsync("Analyzing solution...", async (_) =>
 			{
 				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath);
 				(hasEntityApiAttribute, hasLinkToAttribute, hasEntityDomainBuilder) = await discovery.CheckAtomicFrameworkAsync();

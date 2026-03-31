@@ -9,7 +9,7 @@ public static class IdeCommand
 	public static Command Create()
 	{
 		Command command = new Command("ide", "Setup IDE integration (Live Templates, External Tools)");
-		command.SetHandler((Action)delegate
+		command.SetHandler(() =>
 		{
 			while (true)
 			{

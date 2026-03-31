@@ -198,11 +198,7 @@ public sealed class DomainUsageFinder : IUsageFinder
 
 	private void AddExpectedTypes(string entityName, string newEntityName, Dictionary<string, string> definedTypes)
 	{
-		string[] typeSuffixes = new string[11]
-		{
-			"", "Behaviours", "Factory", "Pool", "View", "ViewPool", "ViewCatalog", "Baker", "Installer", "UI",
-			"Aspect"
-		};
+		string[] typeSuffixes = ["", "Behaviours", "Factory", "Pool", "View", "ViewPool", "ViewCatalog", "Baker", "Installer", "UI", "Aspect"];
 		foreach (string suffix in typeSuffixes)
 		{
 			definedTypes.TryAdd(entityName + suffix, newEntityName + suffix);
@@ -211,7 +207,7 @@ public sealed class DomainUsageFinder : IUsageFinder
 		definedTypes.TryAdd("Scene" + entityName, "Scene" + newEntityName);
 		definedTypes.TryAdd("Scene" + entityName + "World", "Scene" + newEntityName + "World");
 		definedTypes.TryAdd("Scene" + entityName + "Proxy", "Scene" + newEntityName + "Proxy");
-		string[] lifecycleSuffixes = new string[8] { "Init", "Dispose", "Enable", "Disable", "Tick", "FixedTick", "LateTick", "Gizmos" };
+		string[] lifecycleSuffixes = ["Init", "Dispose", "Enable", "Disable", "Tick", "FixedTick", "LateTick", "Gizmos"];
 		foreach (string lifecycleSuffix in lifecycleSuffixes)
 		{
 			definedTypes.TryAdd(entityName + lifecycleSuffix, newEntityName + lifecycleSuffix);

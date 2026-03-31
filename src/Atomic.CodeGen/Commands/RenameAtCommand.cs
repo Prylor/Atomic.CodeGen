@@ -51,7 +51,7 @@ public static class RenameAtCommand
 		Option<bool> verboseOption = new Option<bool>(["--verbose", "-v"], () => false, "Enable verbose logging");
 		Option<bool> jsonOption = new Option<bool>(["--json"], () => false, "Output results as JSON (for IDE integration)");
 		Command command = new Command("rename-at", "Rename symbol at cursor position (for IDE integration)") { projectOption, fileOption, lineOption, columnOption, toOption, dryRunOption, verboseOption, jsonOption };
-		command.SetHandler(async delegate(string projectPath, string file, int line, int column, string to, bool dryRun, bool verbose, bool json)
+		command.SetHandler(async (string projectPath, string file, int line, int column, string to, bool dryRun, bool verbose, bool json) =>
 		{
 			Logger.SetVerbose(verbose);
 			if (!json)
@@ -140,62 +140,62 @@ public static class RenameAtCommand
 		{
 			if (parent is EnumMemberDeclarationSyntax enumMemberDeclarationSyntax)
 			{
-				EnumDeclarationSyntax enumDeclarationSyntax = enumMemberDeclarationSyntax.Parent as EnumDeclarationSyntax;
-				if (enumDeclarationSyntax?.Identifier.Text == "Tags")
+				EnumDeclarationSyntax tagsEnum = enumMemberDeclarationSyntax.Parent as EnumDeclarationSyntax;
+				if (tagsEnum?.Identifier.Text == "Tags")
 				{
-					ClassDeclarationSyntax classDeclarationSyntax = FindOwnerClass(enumDeclarationSyntax);
-					if (classDeclarationSyntax != null)
+					ClassDeclarationSyntax ownerClass = FindOwnerClass(tagsEnum);
+					if (ownerClass != null)
 					{
 						return new SymbolInfo
 						{
 							Type = RenameType.Tag,
 							Name = enumMemberDeclarationSyntax.Identifier.Text,
-							OwnerName = classDeclarationSyntax.Identifier.Text
+							OwnerName = ownerClass.Identifier.Text
 						};
 					}
 				}
 			}
-			if (parent is FieldDeclarationSyntax fieldDeclarationSyntax)
+			if (parent is FieldDeclarationSyntax fieldDecl)
 			{
-				ClassDeclarationSyntax classDeclarationSyntax2 = fieldDeclarationSyntax.Parent as ClassDeclarationSyntax;
-				if (classDeclarationSyntax2?.Identifier.Text == "Values")
+				ClassDeclarationSyntax parentClass = fieldDecl.Parent as ClassDeclarationSyntax;
+				if (parentClass?.Identifier.Text == "Values")
 				{
-					ClassDeclarationSyntax classDeclarationSyntax3 = FindOwnerClass(classDeclarationSyntax2);
-					if (classDeclarationSyntax3 != null)
+					ClassDeclarationSyntax ownerClass = FindOwnerClass(parentClass);
+					if (ownerClass != null)
 					{
-						string fieldName = fieldDeclarationSyntax.Declaration.Variables.FirstOrDefault()?.Identifier.Text;
+						string fieldName = fieldDecl.Declaration.Variables.FirstOrDefault()?.Identifier.Text;
 						if (fieldName != null)
 						{
 							return new SymbolInfo
 							{
 								Type = RenameType.Value,
 								Name = fieldName,
-								OwnerName = classDeclarationSyntax3.Identifier.Text
+								OwnerName = ownerClass.Identifier.Text
 							};
 						}
 					}
 				}
 			}
-			if (parent is ClassDeclarationSyntax classDeclarationSyntax4 && classDeclarationSyntax4.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).Any((AttributeSyntax a) => a.Name.ToString().Contains("LinkTo")))
+			if (parent is ClassDeclarationSyntax behaviourClass && behaviourClass.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).Any((AttributeSyntax a) => a.Name.ToString().Contains("LinkTo")))
 			{
-				string linkedApiName = ExtractApiNameFromLinkTo(classDeclarationSyntax4.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).FirstOrDefault((AttributeSyntax a) => a.Name.ToString().Contains("LinkTo")));
+				string linkedApiName = ExtractApiNameFromLinkTo(behaviourClass.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).FirstOrDefault((AttributeSyntax a) => a.Name.ToString().Contains("LinkTo")));
 				if (linkedApiName != null)
 				{
 					return new SymbolInfo
 					{
 						Type = RenameType.Behaviour,
-						Name = classDeclarationSyntax4.Identifier.Text,
+						Name = behaviourClass.Identifier.Text,
 						OwnerName = linkedApiName
 					};
 				}
 			}
-			if (parent is PropertyDeclarationSyntax { Identifier: { Text: "EntityName" }, ExpressionBody: not null } propertyDeclarationSyntax && propertyDeclarationSyntax.ExpressionBody.Expression is LiteralExpressionSyntax { Token: { Value: string value } } && propertyDeclarationSyntax.Parent is ClassDeclarationSyntax classDeclarationSyntax5)
+			if (parent is PropertyDeclarationSyntax { Identifier: { Text: "EntityName" }, ExpressionBody: not null } entityNameProperty && entityNameProperty.ExpressionBody.Expression is LiteralExpressionSyntax { Token: { Value: string value } } && entityNameProperty.Parent is ClassDeclarationSyntax domainClass)
 			{
 				return new SymbolInfo
 				{
 					Type = RenameType.Domain,
 					Name = value,
-					OwnerName = classDeclarationSyntax5.Identifier.Text
+					OwnerName = domainClass.Identifier.Text
 				};
 			}
 			if (parent is InvocationExpressionSyntax invocation)
@@ -234,9 +234,9 @@ public static class RenameAtCommand
 	{
 		for (SyntaxNode parent = node.Parent; parent != null; parent = parent.Parent)
 		{
-			if (parent is ClassDeclarationSyntax classDeclarationSyntax && classDeclarationSyntax.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).Any((AttributeSyntax a) => a.Name.ToString().Contains("EntityAPI")))
+			if (parent is ClassDeclarationSyntax ownerClass && ownerClass.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).Any((AttributeSyntax a) => a.Name.ToString().Contains("EntityAPI")))
 			{
-				return classDeclarationSyntax;
+				return ownerClass;
 			}
 		}
 		return null;

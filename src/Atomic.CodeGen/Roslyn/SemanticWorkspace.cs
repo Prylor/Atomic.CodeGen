@@ -152,7 +152,7 @@ public sealed class SemanticWorkspace : IDisposable
 		try
 		{
 			MSBuildWorkspace msbuildWorkspace = MSBuildWorkspace.Create();
-			msbuildWorkspace.WorkspaceFailed += delegate(object? sender, WorkspaceDiagnosticEventArgs args)
+			msbuildWorkspace.WorkspaceFailed += (sender, args) =>
 			{
 				if (args.Diagnostic.Kind == WorkspaceDiagnosticKind.Failure)
 				{
