@@ -24,100 +24,100 @@ public sealed class DomainUsageFinder : IUsageFinder
 
 	public List<UsageMatch> FindUsages(RenameContext context, IEnumerable<string> files, ApiRegistry registry, ImportAnalyzer importAnalyzer)
 	{
-		List<UsageMatch> list = new List<UsageMatch>();
+		List<UsageMatch> results = new List<UsageMatch>();
 		string oldName = context.OldName;
 		string newName = context.NewName;
 		string sourceFilePath = context.SourceFilePath;
 		_ = context.OwnerNamespace;
-		List<string> list2 = files.ToList();
+		List<string> allFiles = files.ToList();
 		Path.GetDirectoryName(Path.GetFullPath(sourceFilePath));
 		string outputDirectory = context.OutputDirectory;
-		HashSet<string> hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		HashSet<string> hashSet2 = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		Dictionary<string, string> dictionary = new Dictionary<string, string>();
-		foreach (string item2 in list2)
+		HashSet<string> generatedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		HashSet<string> generatedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, string> typeRenames = new Dictionary<string, string>();
+		foreach (string filePath in allFiles)
 		{
-			if (File.Exists(item2))
+			if (File.Exists(filePath))
 			{
-				string content = File.ReadAllText(item2);
-				switch (ClassifyFile(item2, content, sourceFilePath))
+				string content = File.ReadAllText(filePath);
+				switch (ClassifyFile(filePath, content, sourceFilePath))
 				{
 				case FileType.DomainDefinition:
 				{
-					string fullPath2 = Path.GetFullPath(item2);
-					hashSet.Add(fullPath2);
-					hashSet2.Add(Path.GetDirectoryName(fullPath2) ?? "");
-					FindEntityNameProperty(item2, content, oldName, newName, list);
+					string fullPath2 = Path.GetFullPath(filePath);
+					generatedFilePaths.Add(fullPath2);
+					generatedDirectories.Add(Path.GetDirectoryName(fullPath2) ?? "");
+					FindEntityNameProperty(filePath, content, oldName, newName, results);
 					break;
 				}
 				case FileType.GeneratedByDomain:
 				{
-					string fullPath = Path.GetFullPath(item2);
-					hashSet.Add(fullPath);
-					hashSet2.Add(Path.GetDirectoryName(fullPath) ?? "");
-					ExtractTypeDefinitions(content, oldName, newName, dictionary);
+					string fullPath = Path.GetFullPath(filePath);
+					generatedFilePaths.Add(fullPath);
+					generatedDirectories.Add(Path.GetDirectoryName(fullPath) ?? "");
+					ExtractTypeDefinitions(content, oldName, newName, typeRenames);
 					break;
 				}
 				}
 			}
 		}
-		if (dictionary.Count == 0)
+		if (typeRenames.Count == 0)
 		{
-			AddExpectedTypes(oldName, newName, dictionary);
+			AddExpectedTypes(oldName, newName, typeRenames);
 		}
 		if (!string.IsNullOrEmpty(outputDirectory))
 		{
-			hashSet2.Add(Path.GetFullPath(outputDirectory));
+			generatedDirectories.Add(Path.GetFullPath(outputDirectory));
 		}
-		string value;
-		string key;
-		foreach (string item3 in hashSet)
+		string deconstructedKey;
+		string deconstructedValue;
+		foreach (string generatedFile in generatedFilePaths)
 		{
-			if (!File.Exists(item3))
+			if (!File.Exists(generatedFile))
 			{
 				continue;
 			}
-			string[] lines = File.ReadAllText(item3).Split('\n');
-			foreach (KeyValuePair<string, string> item4 in dictionary)
+			string[] lines = File.ReadAllText(generatedFile).Split('\n');
+			foreach (KeyValuePair<string, string> typeRename in typeRenames)
 			{
-				item4.Deconstruct(out value, out key);
-				string typeName = value;
-				string newTypeName = key;
+				typeRename.Deconstruct(out deconstructedKey, out deconstructedValue);
+				string typeName = deconstructedKey;
+				string newTypeName = deconstructedValue;
 				string typeCategory = GetTypeCategory(typeName, oldName);
-				FindTypeReferences(item3, lines, typeName, newTypeName, typeCategory, list);
+				FindTypeReferences(generatedFile, lines, typeName, newTypeName, typeCategory, results);
 			}
-			string fileName = Path.GetFileName(item3);
-			string text = Path.GetFullPath(item3).Replace('/', '\\');
-			string value2 = Path.GetFullPath(sourceFilePath).Replace('/', '\\');
-			if (fileName.Contains(oldName) && !text.Equals(value2, StringComparison.OrdinalIgnoreCase))
+			string fileName = Path.GetFileName(generatedFile);
+			string normalizedFilePath = Path.GetFullPath(generatedFile).Replace('/', '\\');
+			string normalizedSourcePath = Path.GetFullPath(sourceFilePath).Replace('/', '\\');
+			if (fileName.Contains(oldName) && !normalizedFilePath.Equals(normalizedSourcePath, StringComparison.OrdinalIgnoreCase))
 			{
-				string path = fileName.Replace(oldName, newName);
-				string item = Path.Combine(Path.GetDirectoryName(item3) ?? "", path);
-				context.FileRenames.Add((item3, item));
+				string renamedFileName = fileName.Replace(oldName, newName);
+				string renamedFilePath = Path.Combine(Path.GetDirectoryName(generatedFile) ?? "", renamedFileName);
+				context.FileRenames.Add((generatedFile, renamedFilePath));
 			}
 		}
-		foreach (string item5 in FindConsumerFilesInDomainTree(list2, oldName, hashSet, hashSet2, dictionary.Keys))
+		foreach (string consumerFile in FindConsumerFilesInDomainTree(allFiles, oldName, generatedFilePaths, generatedDirectories, typeRenames.Keys))
 		{
-			if (!File.Exists(item5))
+			if (!File.Exists(consumerFile))
 			{
 				continue;
 			}
-			string[] lines2 = File.ReadAllText(item5).Split('\n');
-			foreach (KeyValuePair<string, string> item6 in dictionary)
+			string[] lines2 = File.ReadAllText(consumerFile).Split('\n');
+			foreach (KeyValuePair<string, string> typeRename in typeRenames)
 			{
-				item6.Deconstruct(out key, out value);
-				string typeName2 = key;
-				string newTypeName2 = value;
+				typeRename.Deconstruct(out deconstructedKey, out deconstructedValue);
+				string typeName2 = deconstructedKey;
+				string newTypeName2 = deconstructedValue;
 				string category = GetTypeCategory(typeName2, oldName) + " (consumer)";
-				FindTypeReferences(item5, lines2, typeName2, newTypeName2, category, list);
+				FindTypeReferences(consumerFile, lines2, typeName2, newTypeName2, category, results);
 			}
 		}
-		return list;
+		return results;
 	}
 
 	private HashSet<string> FindConsumerFilesInDomainTree(List<string> files, string entityName, HashSet<string> generatedFiles, HashSet<string> generatedDirs, IEnumerable<string> definedTypeNames)
 	{
-		HashSet<string> hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		HashSet<string> consumerFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (string file in files)
 		{
 			string fullPath = Path.GetFullPath(file);
@@ -131,11 +131,11 @@ public sealed class DomainUsageFinder : IUsageFinder
 				string content = File.ReadAllText(file);
 				if (definedTypeNames.Any((string typeName) => Regex.IsMatch(content, "\\b" + Regex.Escape(typeName) + "\\b")))
 				{
-					hashSet.Add(fullPath);
+					consumerFiles.Add(fullPath);
 				}
 			}
 		}
-		return hashSet;
+		return consumerFiles;
 	}
 
 	private bool IsInDirectoryTree(string childDir, string parentDir)
@@ -144,16 +144,16 @@ public sealed class DomainUsageFinder : IUsageFinder
 		{
 			return false;
 		}
-		string text = Path.GetFullPath(childDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-		string value = Path.GetFullPath(parentDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-		return text.StartsWith(value, StringComparison.OrdinalIgnoreCase);
+		string normalizedChild = Path.GetFullPath(childDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+		string normalizedParent = Path.GetFullPath(parentDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+		return normalizedChild.StartsWith(normalizedParent, StringComparison.OrdinalIgnoreCase);
 	}
 
 	private FileType ClassifyFile(string filePath, string content, string domainSourceFile)
 	{
-		string text = Path.GetFullPath(filePath).Replace('/', '\\');
-		string text2 = Path.GetFullPath(domainSourceFile).Replace('/', '\\');
-		if (text.Equals(text2, StringComparison.OrdinalIgnoreCase))
+		string normalizedFilePath = Path.GetFullPath(filePath).Replace('/', '\\');
+		string normalizedDomainPath = Path.GetFullPath(domainSourceFile).Replace('/', '\\');
+		if (normalizedFilePath.Equals(normalizedDomainPath, StringComparison.OrdinalIgnoreCase))
 		{
 			return FileType.DomainDefinition;
 		}
@@ -163,19 +163,19 @@ public sealed class DomainUsageFinder : IUsageFinder
 		{
 			return FileType.Unrelated;
 		}
-		string text3 = match.Groups[1].Value.Trim().Replace('/', '\\');
-		if (!Path.IsPathRooted(text3))
+		string referencedSourcePath = match.Groups[1].Value.Trim().Replace('/', '\\');
+		if (!Path.IsPathRooted(referencedSourcePath))
 		{
-			string fileName = Path.GetFileName(text2);
-			if (text3.EndsWith(fileName, StringComparison.OrdinalIgnoreCase))
+			string fileName = Path.GetFileName(normalizedDomainPath);
+			if (referencedSourcePath.EndsWith(fileName, StringComparison.OrdinalIgnoreCase))
 			{
 				return FileType.GeneratedByDomain;
 			}
 		}
 		else
 		{
-			text3 = Path.GetFullPath(text3).Replace('/', '\\');
-			if (text3.Equals(text2, StringComparison.OrdinalIgnoreCase))
+			referencedSourcePath = Path.GetFullPath(referencedSourcePath).Replace('/', '\\');
+			if (referencedSourcePath.Equals(normalizedDomainPath, StringComparison.OrdinalIgnoreCase))
 			{
 				return FileType.GeneratedByDomain;
 			}
@@ -185,13 +185,13 @@ public sealed class DomainUsageFinder : IUsageFinder
 
 	private void ExtractTypeDefinitions(string content, string entityName, string newEntityName, Dictionary<string, string> definedTypes)
 	{
-		foreach (Match item in TypeDefinitionRegex.Matches(content))
+		foreach (Match typeMatch in TypeDefinitionRegex.Matches(content))
 		{
-			string value = item.Groups[1].Value;
-			if (value.Contains(entityName, StringComparison.Ordinal))
+			string typeName = typeMatch.Groups[1].Value;
+			if (typeName.Contains(entityName, StringComparison.Ordinal))
 			{
-				string value2 = value.Replace(entityName, newEntityName);
-				definedTypes.TryAdd(value, value2);
+				string renamedTypeName = typeName.Replace(entityName, newEntityName);
+				definedTypes.TryAdd(typeName, renamedTypeName);
 			}
 		}
 	}
@@ -203,18 +203,18 @@ public sealed class DomainUsageFinder : IUsageFinder
 			"", "Behaviours", "Factory", "Pool", "View", "ViewPool", "ViewCatalog", "Baker", "Installer", "UI",
 			"Aspect"
 		};
-		foreach (string text in array)
+		foreach (string suffix in array)
 		{
-			definedTypes.TryAdd(entityName + text, newEntityName + text);
-			definedTypes.TryAdd("I" + entityName + text, "I" + newEntityName + text);
+			definedTypes.TryAdd(entityName + suffix, newEntityName + suffix);
+			definedTypes.TryAdd("I" + entityName + suffix, "I" + newEntityName + suffix);
 		}
 		definedTypes.TryAdd("Scene" + entityName, "Scene" + newEntityName);
 		definedTypes.TryAdd("Scene" + entityName + "World", "Scene" + newEntityName + "World");
 		definedTypes.TryAdd("Scene" + entityName + "Proxy", "Scene" + newEntityName + "Proxy");
 		array = new string[8] { "Init", "Dispose", "Enable", "Disable", "Tick", "FixedTick", "LateTick", "Gizmos" };
-		foreach (string text2 in array)
+		foreach (string lifecycleSuffix in array)
 		{
-			definedTypes.TryAdd(entityName + text2, newEntityName + text2);
+			definedTypes.TryAdd(entityName + lifecycleSuffix, newEntityName + lifecycleSuffix);
 		}
 	}
 
@@ -223,8 +223,8 @@ public sealed class DomainUsageFinder : IUsageFinder
 		if (!string.IsNullOrEmpty(domainNamespace))
 		{
 			bool hasDomainImport = Regex.IsMatch(content, "using\\s+" + Regex.Escape(domainNamespace) + "\\s*;");
-			bool flag = Regex.IsMatch(content, "namespace\\s+" + Regex.Escape(domainNamespace) + "\\b");
-			if (!hasDomainImport && !flag)
+			bool isInDomainNamespace = Regex.IsMatch(content, "namespace\\s+" + Regex.Escape(domainNamespace) + "\\b");
+			if (!hasDomainImport && !isInDomainNamespace)
 			{
 				return false;
 			}
@@ -243,22 +243,22 @@ public sealed class DomainUsageFinder : IUsageFinder
 	{
 		string[] array = content.Split('\n');
 		Regex regex = new Regex("EntityName\\s*=>\\s*\"" + Regex.Escape(entityName) + "\"");
-		int num = 0;
+		int lineNumber = 0;
 		string[] array2 = array;
-		foreach (string text in array2)
+		foreach (string line in array2)
 		{
-			num++;
-			foreach (Match item in regex.Matches(text))
+			lineNumber++;
+			foreach (Match regexMatch in regex.Matches(line))
 			{
 				results.Add(new UsageMatch
 				{
 					FilePath = filePath,
-					Line = num,
-					Column = item.Index + 1,
-					Length = item.Length,
-					MatchedText = item.Value,
+					Line = lineNumber,
+					Column = regexMatch.Index + 1,
+					Length = regexMatch.Length,
+					MatchedText = regexMatch.Value,
 					ReplacementText = "EntityName => \"" + newEntityName + "\"",
-					LineContext = text.TrimEnd('\r'),
+					LineContext = line.TrimEnd('\r'),
 					Category = "EntityNameProperty",
 					IsAmbiguous = false
 				});
@@ -322,23 +322,23 @@ public sealed class DomainUsageFinder : IUsageFinder
 	private void FindTypeReferences(string filePath, string[] lines, string typeName, string newTypeName, string category, List<UsageMatch> results)
 	{
 		Regex regex = new Regex("\\b" + Regex.Escape(typeName) + "\\b");
-		int num = 0;
-		foreach (string text in lines)
+		int lineNumber = 0;
+		foreach (string line in lines)
 		{
-			num++;
-			foreach (Match item in regex.Matches(text))
+			lineNumber++;
+			foreach (Match regexMatch in regex.Matches(line))
 			{
-				if (!IsInStringLiteral(text, item.Index))
+				if (!IsInStringLiteral(line, regexMatch.Index))
 				{
 					results.Add(new UsageMatch
 					{
 						FilePath = filePath,
-						Line = num,
-						Column = item.Index + 1,
-						Length = item.Length,
-						MatchedText = item.Value,
+						Line = lineNumber,
+						Column = regexMatch.Index + 1,
+						Length = regexMatch.Length,
+						MatchedText = regexMatch.Value,
 						ReplacementText = newTypeName,
-						LineContext = text.TrimEnd('\r'),
+						LineContext = line.TrimEnd('\r'),
 						Category = category,
 						IsAmbiguous = false
 					});
@@ -349,14 +349,14 @@ public sealed class DomainUsageFinder : IUsageFinder
 
 	private bool IsInStringLiteral(string line, int position)
 	{
-		int num = 0;
+		int quoteCount = 0;
 		for (int i = 0; i < position && i < line.Length; i++)
 		{
 			if (line[i] == '"' && (i == 0 || line[i - 1] != '\\'))
 			{
-				num++;
+				quoteCount++;
 			}
 		}
-		return num % 2 == 1;
+		return quoteCount % 2 == 1;
 	}
 }

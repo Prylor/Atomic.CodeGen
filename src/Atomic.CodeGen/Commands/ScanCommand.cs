@@ -16,19 +16,19 @@ public static class ScanCommand
 	{
 		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
 		Option<bool> option2 = new Option<bool>(new string[2] { "--verbose", "-v" }, () => false, "Enable verbose logging");
-		Command obj = new Command("scan", "Scan for Entity API definitions") { option, option2 };
-		obj.SetHandler(async delegate(string projectPath, bool verbose)
+		Command command = new Command("scan", "Scan for Entity API definitions") { option, option2 };
+		command.SetHandler(async delegate(string projectPath, bool verbose)
 		{
 			Logger.SetVerbose(verbose);
 			Logger.LogHeader("Atomic CodeGen - Scan");
 			CodeGenConfig config = await ConfigLoader.LoadAsync(projectPath);
 			config.Verbose = verbose;
-			string text = FindSolutionFile(projectPath);
-			if (text != null)
+			string solutionPath = FindSolutionFile(projectPath);
+			if (solutionPath != null)
 			{
 				Logger.LogInfo("Using Roslyn semantic analysis...");
 				Logger.LogInfo("");
-				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(text, config.AnalyzerMode, config.IncludedProjects);
+				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath, config.AnalyzerMode, config.IncludedProjects);
 				DiscoveryResult discoveryResult = await discovery.DiscoverAllAsync(config.ExcludePaths);
 				if (discoveryResult.EntityApis.Count > 0)
 				{
@@ -54,8 +54,8 @@ public static class ScanCommand
 						Logger.LogInfo("    Source: " + Path.GetRelativePath(projectPath, behaviour.SourceFile));
 						if (behaviour.ConstructorParameters.Count > 0)
 						{
-							string text2 = string.Join(", ", behaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Type + " " + p.Name));
-							Logger.LogInfo("    Constructor: (" + text2 + ")");
+							string constructorParams = string.Join(", ", behaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Type + " " + p.Name));
+							Logger.LogInfo("    Constructor: (" + constructorParams + ")");
 						}
 						Logger.LogInfo("");
 					}
@@ -86,12 +86,12 @@ public static class ScanCommand
 			{
 				Logger.LogInfo("No solution file found, using file scanning...");
 				Logger.LogInfo("");
-				List<string> list = new FileScanner(config).Scan();
-				Logger.LogInfo($"Scanning {list.Count} files...");
+				List<string> scannedFiles = new FileScanner(config).Scan();
+				Logger.LogInfo($"Scanning {scannedFiles.Count} files...");
 				Logger.LogInfo("");
 				EntityAPIParser parser = new EntityAPIParser();
 				List<string> definitions = new List<string>();
-				foreach (string file in list)
+				foreach (string file in scannedFiles)
 				{
 					EntityAPIDefinition entityAPIDefinition = await parser.ParseFileAsync(file);
 					if (entityAPIDefinition != null && entityAPIDefinition.IsValid)
@@ -109,7 +109,7 @@ public static class ScanCommand
 			}
 			Console.ResetColor();
 		}, option, option2);
-		return obj;
+		return command;
 	}
 
 	private static string? FindSolutionFile(string projectPath)

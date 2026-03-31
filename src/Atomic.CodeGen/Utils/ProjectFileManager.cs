@@ -99,21 +99,21 @@ public static class ProjectFileManager
 			}
 			string path = Path.GetDirectoryName(projectFilePath) ?? projectRoot;
 			string fullPath = Path.GetFullPath(Path.Combine(projectRoot, outputDirectory));
-			List<XElement> list = (from e in root.Descendants()
+			List<XElement> compileElements = (from e in root.Descendants()
 				where e.Name.LocalName == "Compile"
 				select e).ToList();
-			bool flag = false;
-			foreach (XElement item in list)
+			bool hasRemovals = false;
+			foreach (XElement compileElement in compileElements)
 			{
-				string text = item.Attribute("Include")?.Value;
-				if (!string.IsNullOrEmpty(text) && Path.GetFullPath(Path.Combine(path, text)).StartsWith(fullPath, StringComparison.OrdinalIgnoreCase))
+				string includePath = compileElement.Attribute("Include")?.Value;
+				if (!string.IsNullOrEmpty(includePath) && Path.GetFullPath(Path.Combine(path, includePath)).StartsWith(fullPath, StringComparison.OrdinalIgnoreCase))
 				{
-					item.Remove();
-					flag = true;
-					Logger.LogVerbose("Removed from project: " + text);
+					compileElement.Remove();
+					hasRemovals = true;
+					Logger.LogVerbose("Removed from project: " + includePath);
 				}
 			}
-			if (flag)
+			if (hasRemovals)
 			{
 				await File.WriteAllTextAsync(projectFilePath, xDocument.ToString());
 			}

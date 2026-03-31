@@ -51,16 +51,16 @@ public sealed class RenameContext
 
 	public string GetSummary()
 	{
-		int value = AffectedFiles.Count();
-		int count = Usages.Count;
-		int count2 = AmbiguousUsages.Count;
-		string text = $"{Type} rename: {OldName} → {NewName}\n";
-		text += $"Owner: {OwnerNamespace}.{OwnerName}\n";
-		text += $"Usages: {count} in {value} file(s)";
-		if (count2 > 0)
+		int fileCount = AffectedFiles.Count();
+		int usageCount = Usages.Count;
+		int ambiguousCount = AmbiguousUsages.Count;
+		string summary = $"{Type} rename: {OldName} → {NewName}\n";
+		summary += $"Owner: {OwnerNamespace}.{OwnerName}\n";
+		summary += $"Usages: {usageCount} in {fileCount} file(s)";
+		if (ambiguousCount > 0)
 		{
-			text += $" ({count2} ambiguous)";
+			summary += $" ({ambiguousCount} ambiguous)";
 		}
-		return text;
+		return summary;
 	}
 }

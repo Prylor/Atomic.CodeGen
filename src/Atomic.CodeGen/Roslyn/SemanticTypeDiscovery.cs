@@ -124,18 +124,18 @@ public sealed class SemanticTypeDiscovery : IDisposable
 					{
 						continue;
 					}
-					foreach (ClassDeclarationSyntax item in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<ClassDeclarationSyntax>())
+					foreach (ClassDeclarationSyntax classDecl in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<ClassDeclarationSyntax>())
 					{
-						string text = item.Identifier.Text;
-						if (text == "EntityAPIAttribute" && InheritsFromAttribute(item))
+						string className = classDecl.Identifier.Text;
+						if (className == "EntityAPIAttribute" && InheritsFromAttribute(classDecl))
 						{
 							hasEntityApiAttribute = true;
 						}
-						if (text == "LinkToAttribute" && InheritsFromAttribute(item))
+						if (className == "LinkToAttribute" && InheritsFromAttribute(classDecl))
 						{
 							hasLinkToAttribute = true;
 						}
-						if (text == "EntityDomainBuilder" && item.Modifiers.Any((SyntaxToken m) => m.IsKind(SyntaxKind.AbstractKeyword)))
+						if (className == "EntityDomainBuilder" && classDecl.Modifiers.Any((SyntaxToken m) => m.IsKind(SyntaxKind.AbstractKeyword)))
 						{
 							hasEntityDomainBuilder = true;
 						}
@@ -164,8 +164,8 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		SeparatedSyntaxList<BaseTypeSyntax>.Enumerator enumerator = classDecl.BaseList.Types.GetEnumerator();
 		while (enumerator.MoveNext())
 		{
-			string text = enumerator.Current.Type.ToString();
-			if (text == "Attribute" || text == "System.Attribute")
+			string baseTypeName = enumerator.Current.Type.ToString();
+			if (baseTypeName == "Attribute" || baseTypeName == "System.Attribute")
 			{
 				return true;
 			}
@@ -182,25 +182,25 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		}
 		SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
 		string filePath = doc.FilePath;
-		bool flag = compilationUnitSyntax.Usings.Any((UsingDirectiveSyntax u) => u.Name?.ToString() == "Atomic.Entities");
-		foreach (ClassDeclarationSyntax item in compilationUnitSyntax.DescendantNodes().OfType<ClassDeclarationSyntax>())
+		bool hasAtomicEntitiesUsing = compilationUnitSyntax.Usings.Any((UsingDirectiveSyntax u) => u.Name?.ToString() == "Atomic.Entities");
+		foreach (ClassDeclarationSyntax classDecl in compilationUnitSyntax.DescendantNodes().OfType<ClassDeclarationSyntax>())
 		{
-			INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(item);
+			INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(classDecl);
 			if (declaredSymbol == null)
 			{
 				continue;
 			}
-			if (HasAttribute(declaredSymbol, "Atomic.Entities.EntityAPIAttribute", "EntityAPI", flag))
+			if (HasAttribute(declaredSymbol, "Atomic.Entities.EntityAPIAttribute", "EntityAPI", hasAtomicEntitiesUsing))
 			{
-				EntityAPIDefinition entityAPIDefinition = ParseEntityAPI(filePath, compilationUnitSyntax, item, flag);
+				EntityAPIDefinition entityAPIDefinition = ParseEntityAPI(filePath, compilationUnitSyntax, classDecl, hasAtomicEntitiesUsing);
 				if (entityAPIDefinition != null)
 				{
 					result.EntityApis.Add(entityAPIDefinition);
 				}
 			}
-			if (HasAttribute(declaredSymbol, "Atomic.Entities.LinkToAttribute", "LinkTo", flag))
+			if (HasAttribute(declaredSymbol, "Atomic.Entities.LinkToAttribute", "LinkTo", hasAtomicEntitiesUsing))
 			{
-				BehaviourDefinition behaviourDefinition = ParseBehaviour(filePath, compilationUnitSyntax, item, flag);
+				BehaviourDefinition behaviourDefinition = ParseBehaviour(filePath, compilationUnitSyntax, classDecl, hasAtomicEntitiesUsing);
 				if (behaviourDefinition != null)
 				{
 					result.Behaviours.Add(behaviourDefinition);
@@ -208,7 +208,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 			}
 			if (InheritsFrom(declaredSymbol, "EntityDomainBuilder") || ImplementsInterface(declaredSymbol, "IEntityDomain"))
 			{
-				EntityDomainDefinition entityDomainDefinition = ParseDomain(filePath, compilationUnitSyntax, item);
+				EntityDomainDefinition entityDomainDefinition = ParseDomain(filePath, compilationUnitSyntax, classDecl);
 				if (entityDomainDefinition != null)
 				{
 					result.Domains[filePath] = entityDomainDefinition;
@@ -222,14 +222,14 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		ImmutableArray<AttributeData>.Enumerator enumerator = symbol.GetAttributes().GetEnumerator();
 		while (enumerator.MoveNext())
 		{
-			string text = enumerator.Current.AttributeClass?.ToDisplayString();
-			if (text != null)
+			string attributeFullName = enumerator.Current.AttributeClass?.ToDisplayString();
+			if (attributeFullName != null)
 			{
-				if (text == fullName)
+				if (attributeFullName == fullName)
 				{
 					return true;
 				}
-				if (hasUsing && (text.EndsWith("." + shortName) || text.EndsWith("." + shortName + "Attribute")))
+				if (hasUsing && (attributeFullName.EndsWith("." + shortName) || attributeFullName.EndsWith("." + shortName + "Attribute")))
 				{
 					return true;
 				}
@@ -267,18 +267,18 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		Dictionary<string, string> values = TypeExtractor.ExtractValues(classDecl);
 		string[] stringArray = AttributeParser.GetStringArray(args, "ExcludeImports");
 		List<string> imports = ImportExtractor.Extract(root, stringArray);
-		string text = GetNamespace(classDecl);
-		string text2 = classDecl.Identifier.Text;
-		string text3 = Path.GetDirectoryName(filePath) ?? string.Empty;
-		string text4 = AttributeParser.GetString(args, "Namespace");
-		string text5 = AttributeParser.GetString(args, "ClassName");
-		string text6 = AttributeParser.GetString(args, "Directory");
+		string sourceNamespace = GetNamespace(classDecl);
+		string sourceClassName = classDecl.Identifier.Text;
+		string sourceDirectory = Path.GetDirectoryName(filePath) ?? string.Empty;
+		string overrideNamespace = AttributeParser.GetString(args, "Namespace");
+		string overrideClassName = AttributeParser.GetString(args, "ClassName");
+		string overrideDirectory = AttributeParser.GetString(args, "Directory");
 		EntityAPIDefinition entityAPIDefinition = new EntityAPIDefinition
 		{
 			SourceFile = filePath,
-			Namespace = ((!string.IsNullOrWhiteSpace(text4)) ? text4 : text),
-			ClassName = ((!string.IsNullOrWhiteSpace(text5)) ? text5 : text2),
-			Directory = ((!string.IsNullOrWhiteSpace(text6)) ? text6 : text3),
+			Namespace = ((!string.IsNullOrWhiteSpace(overrideNamespace)) ? overrideNamespace : sourceNamespace),
+			ClassName = ((!string.IsNullOrWhiteSpace(overrideClassName)) ? overrideClassName : sourceClassName),
+			Directory = ((!string.IsNullOrWhiteSpace(overrideDirectory)) ? overrideDirectory : sourceDirectory),
 			TargetProject = AttributeParser.GetString(args, "TargetProject"),
 			EntityType = AttributeParser.GetTypeName(args, "EntityType"),
 			AggressiveInlining = AttributeParser.GetBool(args, "AggressiveInlining", defaultValue: true),
@@ -308,22 +308,22 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		{
 			return null;
 		}
-		string text = ExtractLinkedApiTypeName(attribute);
-		if (string.IsNullOrEmpty(text))
+		string linkedApiTypeName = ExtractLinkedApiTypeName(attribute);
+		if (string.IsNullOrEmpty(linkedApiTypeName))
 		{
 			Logger.LogWarning("[LinkTo] attribute in " + filePath + " has no valid type argument");
 			return null;
 		}
-		string text2 = classDecl.Identifier.Text;
-		string text3 = GetNamespace(classDecl);
+		string className = classDecl.Identifier.Text;
+		string namespaceName = GetNamespace(classDecl);
 		List<(string, string)> constructorParameters = ExtractConstructorParameters(classDecl);
 		List<string> requiredImports = ImportExtractor.Extract(root, Array.Empty<string>());
 		BehaviourDefinition behaviourDefinition = new BehaviourDefinition
 		{
 			SourceFile = filePath,
-			LinkedApiTypeName = text,
-			Namespace = text3,
-			ClassName = text2,
+			LinkedApiTypeName = linkedApiTypeName,
+			Namespace = namespaceName,
+			ClassName = className,
 			ConstructorParameters = constructorParameters,
 			RequiredImports = requiredImports
 		};
@@ -332,11 +332,11 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		{
 			foreach (string error in behaviourDefinition.Errors)
 			{
-				Logger.LogError($"Behaviour {text2} in {filePath}: {error}");
+				Logger.LogError($"Behaviour {className} in {filePath}: {error}");
 			}
 			return null;
 		}
-		Logger.LogVerbose($"Discovered Behaviour: {text2} -> {text} from {filePath}");
+		Logger.LogVerbose($"Discovered Behaviour: {className} -> {linkedApiTypeName} from {filePath}");
 		return behaviourDefinition;
 	}
 
@@ -373,34 +373,34 @@ public sealed class SemanticTypeDiscovery : IDisposable
 
 	private List<(string Name, string Type)> ExtractConstructorParameters(ClassDeclarationSyntax classDecl)
 	{
-		List<(string, string)> list = new List<(string, string)>();
-		List<ConstructorDeclarationSyntax> list2 = classDecl.Members.OfType<ConstructorDeclarationSyntax>().ToList();
-		if (list2.Count == 0)
+		List<(string, string)> parameters = new List<(string, string)>();
+		List<ConstructorDeclarationSyntax> allConstructors = classDecl.Members.OfType<ConstructorDeclarationSyntax>().ToList();
+		if (allConstructors.Count == 0)
 		{
-			return list;
+			return parameters;
 		}
-		List<ConstructorDeclarationSyntax> list3 = list2.Where((ConstructorDeclarationSyntax c) => c.Modifiers.Any((SyntaxToken m) => m.IsKind(SyntaxKind.PublicKeyword))).ToList();
-		ConstructorDeclarationSyntax constructorDeclarationSyntax = null;
-		if (list3.Count > 0)
+		List<ConstructorDeclarationSyntax> publicConstructors = allConstructors.Where((ConstructorDeclarationSyntax c) => c.Modifiers.Any((SyntaxToken m) => m.IsKind(SyntaxKind.PublicKeyword))).ToList();
+		ConstructorDeclarationSyntax selectedConstructor = null;
+		if (publicConstructors.Count > 0)
 		{
-			constructorDeclarationSyntax = list3.OrderByDescending((ConstructorDeclarationSyntax c) => c.ParameterList.Parameters.Count).First();
+			selectedConstructor = publicConstructors.OrderByDescending((ConstructorDeclarationSyntax c) => c.ParameterList.Parameters.Count).First();
 		}
-		else if (list2.Count == 1)
+		else if (allConstructors.Count == 1)
 		{
-			constructorDeclarationSyntax = list2[0];
+			selectedConstructor = allConstructors[0];
 		}
-		if (constructorDeclarationSyntax != null && constructorDeclarationSyntax.ParameterList.Parameters.Count > 0)
+		if (selectedConstructor != null && selectedConstructor.ParameterList.Parameters.Count > 0)
 		{
-			SeparatedSyntaxList<ParameterSyntax>.Enumerator enumerator = constructorDeclarationSyntax.ParameterList.Parameters.GetEnumerator();
+			SeparatedSyntaxList<ParameterSyntax>.Enumerator enumerator = selectedConstructor.ParameterList.Parameters.GetEnumerator();
 			while (enumerator.MoveNext())
 			{
 				ParameterSyntax current = enumerator.Current;
-				string text = current.Identifier.Text;
-				string item = current.Type?.ToString() ?? "object";
-				list.Add((text, item));
+				string paramName = current.Identifier.Text;
+				string paramType = current.Type?.ToString() ?? "object";
+				parameters.Add((paramName, paramType));
 			}
 		}
-		return list;
+		return parameters;
 	}
 
 	private EntityDomainDefinition? ParseDomain(string filePath, CompilationUnitSyntax root, ClassDeclarationSyntax classDecl)
@@ -452,27 +452,27 @@ public sealed class SemanticTypeDiscovery : IDisposable
 
 	private void ParseConfigureMethodCalls(BlockSyntax methodBody, EntityDomainDefinition definition)
 	{
-		IEnumerable<InvocationExpressionSyntax> enumerable = methodBody.DescendantNodes().OfType<InvocationExpressionSyntax>();
-		int num = 0;
-		foreach (InvocationExpressionSyntax item in enumerable)
+		IEnumerable<InvocationExpressionSyntax> invocations = methodBody.DescendantNodes().OfType<InvocationExpressionSyntax>();
+		int modeCount = 0;
+		foreach (InvocationExpressionSyntax invocation in invocations)
 		{
-			switch (GetMethodName(item))
+			switch (GetMethodName(invocation))
 			{
 			case "EntityMode":
 				definition.Mode = EntityMode.Entity;
-				num++;
+				modeCount++;
 				break;
 			case "EntitySingletonMode":
 				definition.Mode = EntityMode.EntitySingleton;
-				num++;
+				modeCount++;
 				break;
 			case "SceneEntityMode":
 				definition.Mode = EntityMode.SceneEntity;
-				num++;
+				modeCount++;
 				break;
 			case "SceneEntitySingletonMode":
 				definition.Mode = EntityMode.SceneEntitySingleton;
-				num++;
+				modeCount++;
 				break;
 			case "GenerateProxy":
 				definition.GenerateProxy = true;
@@ -526,18 +526,18 @@ public sealed class SemanticTypeDiscovery : IDisposable
 				definition.Views |= EntityViewMode.EntityCollectionView;
 				break;
 			case "ExcludeImports":
-				definition.ExcludeImports = GetStringArrayArgument(item);
+				definition.ExcludeImports = GetStringArrayArgument(invocation);
 				break;
 			case "TargetProject":
-				definition.TargetProject = GetStringArgument(item) ?? "";
+				definition.TargetProject = GetStringArgument(invocation) ?? "";
 				break;
 			}
 		}
-		if (num == 0)
+		if (modeCount == 0)
 		{
 			definition.Mode = EntityMode.Entity;
 		}
-		else if (num > 1)
+		else if (modeCount > 1)
 		{
 			Logger.LogWarning("Multiple entity modes in " + definition.ClassName + ". Using first.");
 		}
@@ -546,35 +546,35 @@ public sealed class SemanticTypeDiscovery : IDisposable
 	private void ParsePropertyBasedConfig(ClassDeclarationSyntax classDecl, EntityDomainDefinition definition)
 	{
 		definition.Mode = GetEnumPropertyValue<EntityMode>(classDecl, "Mode").GetValueOrDefault();
-		bool? boolPropertyValue = GetBoolPropertyValue(classDecl, "GenerateProxy");
-		EntityDomainDefinition entityDomainDefinition = definition;
-		bool? flag = boolPropertyValue;
-		bool generateProxy;
-		if (flag.HasValue)
+		bool? generateProxyOverride = GetBoolPropertyValue(classDecl, "GenerateProxy");
+		EntityDomainDefinition targetDefinition = definition;
+		bool? nullableBool = generateProxyOverride;
+		bool resolvedValue;
+		if (nullableBool.HasValue)
 		{
-			generateProxy = flag == true;
+			resolvedValue = nullableBool == true;
 		}
 		else
 		{
 			EntityMode mode = definition.Mode;
-			bool flag2 = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
-			generateProxy = flag2;
+			bool isSceneMode = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
+			resolvedValue = isSceneMode;
 		}
-		entityDomainDefinition.GenerateProxy = generateProxy;
-		bool? boolPropertyValue2 = GetBoolPropertyValue(classDecl, "GenerateWorld");
-		entityDomainDefinition = definition;
-		flag = boolPropertyValue2;
-		if (flag.HasValue)
+		targetDefinition.GenerateProxy = resolvedValue;
+		bool? generateWorldOverride = GetBoolPropertyValue(classDecl, "GenerateWorld");
+		targetDefinition = definition;
+		nullableBool = generateWorldOverride;
+		if (nullableBool.HasValue)
 		{
-			generateProxy = flag == true;
+			resolvedValue = nullableBool == true;
 		}
 		else
 		{
 			EntityMode mode = definition.Mode;
-			bool flag2 = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
-			generateProxy = flag2;
+			bool isSceneMode = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
+			resolvedValue = isSceneMode;
 		}
-		entityDomainDefinition.GenerateWorld = generateProxy;
+		targetDefinition.GenerateWorld = resolvedValue;
 		definition.Installers = GetEnumPropertyValue<EntityInstallerMode>(classDecl, "Installers").GetValueOrDefault();
 		definition.Aspects = GetEnumPropertyValue<EntityAspectMode>(classDecl, "Aspects").GetValueOrDefault();
 		definition.Pools = GetEnumPropertyValue<EntityPoolMode>(classDecl, "Pools").GetValueOrDefault();
@@ -608,12 +608,12 @@ public sealed class SemanticTypeDiscovery : IDisposable
 	{
 		return classDecl.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).FirstOrDefault(delegate(AttributeSyntax a)
 		{
-			string text = a.Name.ToString();
-			if (text.Contains("Atomic.Entities." + shortName))
+			string attributeName = a.Name.ToString();
+			if (attributeName.Contains("Atomic.Entities." + shortName))
 			{
 				return true;
 			}
-			return hasUsing && (text == shortName || text == shortName + "Attribute");
+			return hasUsing && (attributeName == shortName || attributeName == shortName + "Attribute");
 		});
 	}
 
@@ -659,13 +659,13 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		{
 			return null;
 		}
-		object obj = propertyDeclarationSyntax.ExpressionBody?.Expression;
-		if (obj == null)
+		object expressionNode = propertyDeclarationSyntax.ExpressionBody?.Expression;
+		if (expressionNode == null)
 		{
 			AccessorListSyntax? accessorList = propertyDeclarationSyntax.AccessorList;
-			obj = ((accessorList == null) ? null : accessorList.Accessors.FirstOrDefault((AccessorDeclarationSyntax a) => a.Kind() == SyntaxKind.GetAccessorDeclaration)?.ExpressionBody?.Expression);
+			expressionNode = ((accessorList == null) ? null : accessorList.Accessors.FirstOrDefault((AccessorDeclarationSyntax a) => a.Kind() == SyntaxKind.GetAccessorDeclaration)?.ExpressionBody?.Expression);
 		}
-		if (obj is LiteralExpressionSyntax { Token: { Value: string value } })
+		if (expressionNode is LiteralExpressionSyntax { Token: { Value: string value } })
 		{
 			return value;
 		}
@@ -679,13 +679,13 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		{
 			return null;
 		}
-		object obj = propertyDeclarationSyntax.ExpressionBody?.Expression;
-		if (obj == null)
+		object expressionNode = propertyDeclarationSyntax.ExpressionBody?.Expression;
+		if (expressionNode == null)
 		{
 			AccessorListSyntax? accessorList = propertyDeclarationSyntax.AccessorList;
-			obj = ((accessorList == null) ? null : accessorList.Accessors.FirstOrDefault((AccessorDeclarationSyntax a) => a.Kind() == SyntaxKind.GetAccessorDeclaration)?.ExpressionBody?.Expression);
+			expressionNode = ((accessorList == null) ? null : accessorList.Accessors.FirstOrDefault((AccessorDeclarationSyntax a) => a.Kind() == SyntaxKind.GetAccessorDeclaration)?.ExpressionBody?.Expression);
 		}
-		ExpressionSyntax expressionSyntax = (ExpressionSyntax)obj;
+		ExpressionSyntax expressionSyntax = (ExpressionSyntax)expressionNode;
 		if (expressionSyntax is MemberAccessExpressionSyntax memberAccessExpressionSyntax && Enum.TryParse<T>(memberAccessExpressionSyntax.Name.Identifier.Text, out var result))
 		{
 			return result;
@@ -699,14 +699,14 @@ public sealed class SemanticTypeDiscovery : IDisposable
 
 	private static T ParseFlagsExpression<T>(BinaryExpressionSyntax binaryExpr) where T : struct, Enum
 	{
-		List<T> list = new List<T>();
-		CollectFlagValues(binaryExpr, list);
-		int num = 0;
-		foreach (T item in list)
+		List<T> flagValues = new List<T>();
+		CollectFlagValues(binaryExpr, flagValues);
+		int combinedFlags = 0;
+		foreach (T flagValue in flagValues)
 		{
-			num |= Convert.ToInt32(item);
+			combinedFlags |= Convert.ToInt32(flagValue);
 		}
-		return (T)(object)num;
+		return (T)(object)combinedFlags;
 	}
 
 	private static void CollectFlagValues<T>(ExpressionSyntax expr, List<T> values) where T : struct, Enum
@@ -730,13 +730,13 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		{
 			return null;
 		}
-		object obj = propertyDeclarationSyntax.ExpressionBody?.Expression;
-		if (obj == null)
+		object expressionNode = propertyDeclarationSyntax.ExpressionBody?.Expression;
+		if (expressionNode == null)
 		{
 			AccessorListSyntax? accessorList = propertyDeclarationSyntax.AccessorList;
-			obj = ((accessorList == null) ? null : accessorList.Accessors.FirstOrDefault((AccessorDeclarationSyntax a) => a.Kind() == SyntaxKind.GetAccessorDeclaration)?.ExpressionBody?.Expression);
+			expressionNode = ((accessorList == null) ? null : accessorList.Accessors.FirstOrDefault((AccessorDeclarationSyntax a) => a.Kind() == SyntaxKind.GetAccessorDeclaration)?.ExpressionBody?.Expression);
 		}
-		if (obj is LiteralExpressionSyntax node)
+		if (expressionNode is LiteralExpressionSyntax node)
 		{
 			if (node.IsKind(SyntaxKind.TrueLiteralExpression))
 			{
@@ -757,13 +757,13 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		{
 			return null;
 		}
-		object obj = propertyDeclarationSyntax.ExpressionBody?.Expression;
-		if (obj == null)
+		object expressionNode = propertyDeclarationSyntax.ExpressionBody?.Expression;
+		if (expressionNode == null)
 		{
 			AccessorListSyntax? accessorList = propertyDeclarationSyntax.AccessorList;
-			obj = ((accessorList == null) ? null : accessorList.Accessors.FirstOrDefault((AccessorDeclarationSyntax a) => a.Kind() == SyntaxKind.GetAccessorDeclaration)?.ExpressionBody?.Expression);
+			expressionNode = ((accessorList == null) ? null : accessorList.Accessors.FirstOrDefault((AccessorDeclarationSyntax a) => a.Kind() == SyntaxKind.GetAccessorDeclaration)?.ExpressionBody?.Expression);
 		}
-		ExpressionSyntax expressionSyntax = (ExpressionSyntax)obj;
+		ExpressionSyntax expressionSyntax = (ExpressionSyntax)expressionNode;
 		if (expressionSyntax is ImplicitArrayCreationExpressionSyntax implicitArrayCreationExpressionSyntax)
 		{
 			return (from lit in implicitArrayCreationExpressionSyntax.Initializer.Expressions.OfType<LiteralExpressionSyntax>()
@@ -790,24 +790,24 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		{
 			return false;
 		}
-		string text = filePath.Replace('\\', '/');
+		string normalizedPath = filePath.Replace('\\', '/');
 		foreach (string excludePattern in excludePatterns)
 		{
-			string text2 = excludePattern.Replace('\\', '/');
-			if (text2.Contains("**"))
+			string normalizedPattern = excludePattern.Replace('\\', '/');
+			if (normalizedPattern.Contains("**"))
 			{
-				string[] array = text2.Split(new string[1] { "**" }, StringSplitOptions.None);
-				if (array.Length == 2)
+				string[] segments = normalizedPattern.Split(new string[1] { "**" }, StringSplitOptions.None);
+				if (segments.Length == 2)
 				{
-					string value = array[0].TrimEnd('/');
-					string value2 = array[1].TrimStart('/');
-					if ((string.IsNullOrEmpty(value) || text.Contains(value)) && (string.IsNullOrEmpty(value2) || text.Contains(value2)))
+					string prefixPattern = segments[0].TrimEnd('/');
+					string suffixPattern = segments[1].TrimStart('/');
+					if ((string.IsNullOrEmpty(prefixPattern) || normalizedPath.Contains(prefixPattern)) && (string.IsNullOrEmpty(suffixPattern) || normalizedPath.Contains(suffixPattern)))
 					{
 						return true;
 					}
 				}
 			}
-			else if (text.Contains(text2))
+			else if (normalizedPath.Contains(normalizedPattern))
 			{
 				return true;
 			}

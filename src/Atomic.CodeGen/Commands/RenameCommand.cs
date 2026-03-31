@@ -24,8 +24,8 @@ public static class RenameCommand
 		Option<bool> renameFileOption = new Option<bool>(new string[1] { "--rename-file" }, () => false, "Also rename the source file (for behaviours)");
 		Option<bool> verboseOption = new Option<bool>(new string[2] { "--verbose", "-v" }, () => false, "Enable verbose logging");
 		Option<bool> yesOption = new Option<bool>(new string[2] { "--yes", "-y" }, () => false, "Skip confirmation prompt");
-		Command obj = new Command("rename", "Rename EntityAPI symbols (Tags, Values, Behaviours, Domains)") { projectOption, typeOption, apiOption, nameOption, toOption, dryRunOption, renameFileOption, verboseOption, yesOption };
-		obj.SetHandler(async delegate(InvocationContext ctx)
+		Command command = new Command("rename", "Rename EntityAPI symbols (Tags, Values, Behaviours, Domains)") { projectOption, typeOption, apiOption, nameOption, toOption, dryRunOption, renameFileOption, verboseOption, yesOption };
+		command.SetHandler(async delegate(InvocationContext ctx)
 		{
 			string? valueForOption = ctx.ParseResult.GetValueForOption(projectOption);
 			string type = ctx.ParseResult.GetValueForOption(typeOption);
@@ -65,12 +65,12 @@ public static class RenameCommand
 						return;
 					}
 					renameType = ConsoleUI.SelectTagOrValue();
-					string text = ConsoleUI.SelectSymbol(apiEntry, renameType);
-					if (text == null)
+					string selectedSymbol = ConsoleUI.SelectSymbol(apiEntry, renameType);
+					if (selectedSymbol == null)
 					{
 						return;
 					}
-					oldName = text;
+					oldName = selectedSymbol;
 					ownerName = apiEntry.ClassName;
 					break;
 				}
@@ -156,8 +156,8 @@ public static class RenameCommand
 						if (!string.IsNullOrEmpty(sourceFilePath) && File.Exists(sourceFilePath))
 						{
 							string fileName = Path.GetFileName(sourceFilePath);
-							string text2 = fileName.Replace(oldName, newName);
-							if (fileName != text2 && ConsoleUI.PromptRenameFile(fileName, text2))
+							string newFileName = fileName.Replace(oldName, newName);
+							if (fileName != newFileName && ConsoleUI.PromptRenameFile(fileName, newFileName))
 							{
 								context.RenameSourceFile = true;
 							}
@@ -198,7 +198,7 @@ public static class RenameCommand
 				}
 			}
 		});
-		return obj;
+		return command;
 	}
 
 	private static RenameType ParseRenameType(string type)

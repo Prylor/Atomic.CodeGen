@@ -61,12 +61,12 @@ public static class EntityViewGenerators
 		sb.AppendLine("using Atomic.Entities;");
 		sb.AppendLine("using UnityEngine;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();
@@ -93,12 +93,12 @@ public static class EntityViewGenerators
 		sb.AppendLine("using Atomic.Entities;");
 		sb.AppendLine("using UnityEngine;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();
@@ -110,10 +110,10 @@ public static class EntityViewGenerators
 		sb.AppendLine("    /// <remarks>");
 		sb.AppendLine("    /// Use this catalog to define reusable view prefab mappings for different entity configurations.");
 		sb.AppendLine("    /// </remarks>");
-		string value = definition.Namespace.Replace('.', '/');
+		string menuPath = definition.Namespace.Replace('.', '/');
 		sb.AppendLine("    [CreateAssetMenu(");
 		sb.AppendLine($"        fileName = \"{definition.EntityName}ViewCatalog\",");
-		sb.AppendLine($"        menuName = \"{value}/New {definition.EntityName}ViewCatalog\"");
+		sb.AppendLine($"        menuName = \"{menuPath}/New {definition.EntityName}ViewCatalog\"");
 		sb.AppendLine("    )]");
 		sb.AppendLine($"    public sealed class {definition.EntityName}ViewCatalog : EntityViewCatalog<I{definition.EntityName}, {definition.EntityName}View>");
 		sb.AppendLine("    {");
@@ -129,12 +129,12 @@ public static class EntityViewGenerators
 		sb.AppendLine();
 		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();
@@ -160,12 +160,12 @@ public static class EntityViewGenerators
 		sb.AppendLine();
 		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();

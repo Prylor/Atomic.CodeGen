@@ -51,26 +51,26 @@ public sealed class EntityAPIGenerator
 		string contents = GenerateContent();
 		await File.WriteAllTextAsync(outputPath, contents);
 		await GenerateMetaFileAsync(outputPath);
-		List<string> list = new List<string>();
+		List<string> targetProjects = new List<string>();
 		if (!string.IsNullOrWhiteSpace(_definition.TargetProject))
 		{
-			list.Add(_definition.TargetProject);
+			targetProjects.Add(_definition.TargetProject);
 		}
 		else
 		{
-			List<string> list2 = ProjectDetector.FindProjectsForFile(_definition.SourceFile, _config.GetAbsoluteProjectRoot());
-			if (list2.Count == 0)
+			List<string> detectedProjects = ProjectDetector.FindProjectsForFile(_definition.SourceFile, _config.GetAbsoluteProjectRoot());
+			if (detectedProjects.Count == 0)
 			{
 				Logger.LogWarning("Could not find any .csproj containing " + _definition.SourceFile + ". Generated file will not be linked to any project.");
 			}
 			else
 			{
-				list.AddRange(list2);
+				targetProjects.AddRange(detectedProjects);
 			}
 		}
-		foreach (string item in list)
+		foreach (string projectPath in targetProjects)
 		{
-			await ProjectFileManager.AddGeneratedFileAsync(Path.Combine(_config.GetAbsoluteProjectRoot(), item), outputPath, _config.GetAbsoluteProjectRoot());
+			await ProjectFileManager.AddGeneratedFileAsync(Path.Combine(_config.GetAbsoluteProjectRoot(), projectPath), outputPath, _config.GetAbsoluteProjectRoot());
 		}
 		Logger.LogSuccess("Generated: " + outputPath);
 		return true;
@@ -79,8 +79,8 @@ public sealed class EntityAPIGenerator
 	private async Task GenerateMetaFileAsync(string csFilePath)
 	{
 		string metaPath = csFilePath + ".meta";
-		string text = GenerateGuidFromPath(csFilePath);
-		string contents = "fileFormatVersion: 2\r\nguid: " + text + "\r\nMonoImporter:\r\n  externalObjects: {}\r\n  serializedVersion: 2\r\n  defaultReferences: []\r\n  executionOrder: 0\r\n  icon: {instanceID: 0}\r\n  userData:\r\n  assetBundleName:\r\n  assetBundleVariant:\r\n";
+		string guid = GenerateGuidFromPath(csFilePath);
+		string contents = "fileFormatVersion: 2\r\nguid: " + guid + "\r\nMonoImporter:\r\n  externalObjects: {}\r\n  serializedVersion: 2\r\n  defaultReferences: []\r\n  executionOrder: 0\r\n  icon: {instanceID: 0}\r\n  userData:\r\n  assetBundleName:\r\n  assetBundleVariant:\r\n";
 		await File.WriteAllTextAsync(metaPath, contents);
 		Logger.LogVerbose("Generated meta file: " + metaPath);
 	}
@@ -96,8 +96,8 @@ public sealed class EntityAPIGenerator
 	{
 		StringBuilder sb = new StringBuilder();
 		bool hasNamespace = !string.IsNullOrWhiteSpace(_definition.Namespace);
-		string text = (hasNamespace ? _indent : "");
-		string indent = text + _indent;
+		string classIndent = (hasNamespace ? _indent : "");
+		string memberIndent = classIndent + _indent;
 		AppendHeader(sb);
 		AppendUsings(sb);
 		sb.AppendLine();
@@ -107,32 +107,32 @@ public sealed class EntityAPIGenerator
 			sb.AppendLine("{");
 		}
 		sb.AppendLine("#if UNITY_EDITOR");
-		sb.AppendLine($"{text}[InitializeOnLoad]");
+		sb.AppendLine($"{classIndent}[InitializeOnLoad]");
 		sb.AppendLine("#endif");
-		sb.AppendLine($"{text}public static partial class {_definition.ClassName}");
-		sb.AppendLine($"{text}{{");
+		sb.AppendLine($"{classIndent}public static partial class {_definition.ClassName}");
+		sb.AppendLine($"{classIndent}{{");
 		if (_definition.Tags.Count > 0)
 		{
-			AppendTagFields(sb, indent);
+			AppendTagFields(sb, memberIndent);
 		}
 		if (_definition.Values.Count > 0)
 		{
-			AppendValueFields(sb, indent);
+			AppendValueFields(sb, memberIndent);
 		}
-		AppendStaticConstructor(sb, indent);
+		AppendStaticConstructor(sb, memberIndent);
 		if (_definition.Tags.Count > 0)
 		{
-			AppendTagExtensions(sb, indent);
+			AppendTagExtensions(sb, memberIndent);
 		}
 		if (_definition.Values.Count > 0)
 		{
-			AppendValueExtensions(sb, indent);
+			AppendValueExtensions(sb, memberIndent);
 		}
 		if (_definition.LinkedBehaviours.Count > 0)
 		{
-			AppendBehaviourExtensions(sb, indent);
+			AppendBehaviourExtensions(sb, memberIndent);
 		}
-		sb.AppendLine($"{text}}}");
+		sb.AppendLine($"{classIndent}}}");
 		if (hasNamespace)
 		{
 			sb.AppendLine("}");
@@ -176,21 +176,21 @@ public sealed class EntityAPIGenerator
 				sb.AppendLine($"using {import};");
 			}
 		}
-		foreach (string item in from ns in (from b in _definition.LinkedBehaviours
+		foreach (string behaviourNamespace in from ns in (from b in _definition.LinkedBehaviours
 				where !string.IsNullOrWhiteSpace(b.Namespace)
 				select b.Namespace).Distinct()
 			where ns != _definition.Namespace && !_definition.Imports.Contains(ns)
 			select ns)
 		{
-			sb.AppendLine($"using {item};");
+			sb.AppendLine($"using {behaviourNamespace};");
 		}
-		foreach (string item2 in from imp in _definition.LinkedBehaviours.SelectMany((BehaviourDefinition b) => b.RequiredImports).Distinct()
+		foreach (string requiredImport in from imp in _definition.LinkedBehaviours.SelectMany((BehaviourDefinition b) => b.RequiredImports).Distinct()
 			where imp != _definition.Namespace && !_definition.Imports.Contains(imp)
 			select imp)
 		{
-			if (!string.IsNullOrWhiteSpace(item2))
+			if (!string.IsNullOrWhiteSpace(requiredImport))
 			{
-				sb.AppendLine($"using {item2};");
+				sb.AppendLine($"using {requiredImport};");
 			}
 		}
 	}
@@ -209,28 +209,28 @@ public sealed class EntityAPIGenerator
 	{
 		sb.AppendLine();
 		sb.AppendLine($"{indent}///Values");
-		foreach (KeyValuePair<string, string> value4 in _definition.Values)
+		foreach (KeyValuePair<string, string> entry in _definition.Values)
 		{
-			value4.Deconstruct(out var key, out var value);
-			string value2 = key;
-			string text = value;
-			string value3 = (IsObjectType(text) ? "" : (" // " + text));
-			sb.AppendLine($"{indent}public static readonly int {value2};{value3}");
+			entry.Deconstruct(out var key, out var value);
+			string fieldName = key;
+			string valueType = value;
+			string typeComment = (IsObjectType(valueType) ? "" : (" // " + valueType));
+			sb.AppendLine($"{indent}public static readonly int {fieldName};{typeComment}");
 		}
 	}
 
 	private void AppendStaticConstructor(StringBuilder sb, string indent)
 	{
-		string value = indent + _indent;
+		string bodyIndent = indent + _indent;
 		sb.AppendLine();
 		sb.AppendLine($"{indent}static {_definition.ClassName}()");
 		sb.AppendLine($"{indent}{{");
 		if (_definition.Tags.Count > 0)
 		{
-			sb.AppendLine($"{value}//Tags");
+			sb.AppendLine($"{bodyIndent}//Tags");
 			foreach (string tag in _definition.Tags)
 			{
-				sb.AppendLine($"{value}{tag} = NameToId(nameof({tag}));");
+				sb.AppendLine($"{bodyIndent}{tag} = NameToId(nameof({tag}));");
 			}
 		}
 		if (_definition.Values.Count > 0)
@@ -239,12 +239,12 @@ public sealed class EntityAPIGenerator
 			{
 				sb.AppendLine();
 			}
-			sb.AppendLine($"{value}//Values");
-			foreach (KeyValuePair<string, string> value4 in _definition.Values)
+			sb.AppendLine($"{bodyIndent}//Values");
+			foreach (KeyValuePair<string, string> entry in _definition.Values)
 			{
-				value4.Deconstruct(out var key, out var _);
-				string value3 = key;
-				sb.AppendLine($"{value}{value3} = NameToId(nameof({value3}));");
+				entry.Deconstruct(out var key, out var _);
+				string fieldName = key;
+				sb.AppendLine($"{bodyIndent}{fieldName} = NameToId(nameof({fieldName}));");
 			}
 		}
 		sb.AppendLine($"{indent}}}");
@@ -278,35 +278,35 @@ public sealed class EntityAPIGenerator
 		sb.AppendLine();
 		sb.AppendLine();
 		sb.AppendLine($"{indent}///Value Extensions");
-		foreach (var (value, value2) in _definition.Values)
+		foreach (var (fieldName, valueType) in _definition.Values)
 		{
 			sb.AppendLine();
-			sb.AppendLine($"{indent}#region {value}");
+			sb.AppendLine($"{indent}#region {fieldName}");
 			sb.AppendLine();
-			string value3 = (_definition.UnsafeAccess ? "Unsafe" : "");
-			string value4 = (_definition.UnsafeAccess ? "ref " : "");
+			string unsafeSuffix = (_definition.UnsafeAccess ? "Unsafe" : "");
+			string refModifier = (_definition.UnsafeAccess ? "ref " : "");
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static {value2} Get{value}(this {_definition.EntityType} entity) => entity.GetValue{value3}<{value2}>({value});");
+			sb.AppendLine($"{indent}public static {valueType} Get{fieldName}(this {_definition.EntityType} entity) => entity.GetValue{unsafeSuffix}<{valueType}>({fieldName});");
 			if (_definition.UnsafeAccess)
 			{
 				sb.AppendLine();
-				sb.AppendLine($"{indent}public static {value4}{value2} Ref{value}(this {_definition.EntityType} entity) => {value4}entity.GetValue{value3}<{value2}>({value});");
+				sb.AppendLine($"{indent}public static {refModifier}{valueType} Ref{fieldName}(this {_definition.EntityType} entity) => {refModifier}entity.GetValue{unsafeSuffix}<{valueType}>({fieldName});");
 			}
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool TryGet{value}(this {_definition.EntityType} entity, out {value2} value) => entity.TryGetValue{value3}({value}, out value);");
+			sb.AppendLine($"{indent}public static bool TryGet{fieldName}(this {_definition.EntityType} entity, out {valueType} value) => entity.TryGetValue{unsafeSuffix}({fieldName}, out value);");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static void Add{value}(this {_definition.EntityType} entity, {value2} value) => entity.AddValue({value}, value);");
+			sb.AppendLine($"{indent}public static void Add{fieldName}(this {_definition.EntityType} entity, {valueType} value) => entity.AddValue({fieldName}, value);");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool Has{value}(this {_definition.EntityType} entity) => entity.HasValue({value});");
+			sb.AppendLine($"{indent}public static bool Has{fieldName}(this {_definition.EntityType} entity) => entity.HasValue({fieldName});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool Del{value}(this {_definition.EntityType} entity) => entity.DelValue({value});");
+			sb.AppendLine($"{indent}public static bool Del{fieldName}(this {_definition.EntityType} entity) => entity.DelValue({fieldName});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static void Set{value}(this {_definition.EntityType} entity, {value2} value) => entity.SetValue({value}, value);");
+			sb.AppendLine($"{indent}public static void Set{fieldName}(this {_definition.EntityType} entity, {valueType} value) => entity.SetValue({fieldName}, value);");
 			sb.AppendLine();
 			sb.AppendLine($"{indent}#endregion");
 		}
@@ -339,9 +339,9 @@ public sealed class EntityAPIGenerator
 			}
 			else
 			{
-				string value = string.Join(", ", linkedBehaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Type + " " + p.Name));
-				string value2 = string.Join(", ", linkedBehaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Name));
-				sb.AppendLine($"{indent}public static void Add{className}(this {_definition.EntityType} entity, {value}) => entity.AddBehaviour(new {className}({value2}));");
+				string constructorParams = string.Join(", ", linkedBehaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Type + " " + p.Name));
+				string constructorArgs = string.Join(", ", linkedBehaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Name));
+				sb.AppendLine($"{indent}public static void Add{className}(this {_definition.EntityType} entity, {constructorParams}) => entity.AddBehaviour(new {className}({constructorArgs}));");
 			}
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
@@ -372,16 +372,16 @@ public sealed class EntityAPIGenerator
 	{
 		try
 		{
-			string text = string.Join("\n", (await File.ReadAllLinesAsync(filePath)).Take(20));
-			if (_config.TrackOrphans && text.Contains("AtomicGenerator: track file", StringComparison.OrdinalIgnoreCase))
+			string headerContent = string.Join("\n", (await File.ReadAllLinesAsync(filePath)).Take(20));
+			if (_config.TrackOrphans && headerContent.Contains("AtomicGenerator: track file", StringComparison.OrdinalIgnoreCase))
 			{
 				return true;
 			}
-			if (text.Contains("Source file path:", StringComparison.OrdinalIgnoreCase))
+			if (headerContent.Contains("Source file path:", StringComparison.OrdinalIgnoreCase))
 			{
 				return true;
 			}
-			if (text.Contains("Code generation. Don't modify!", StringComparison.OrdinalIgnoreCase))
+			if (headerContent.Contains("Code generation. Don't modify!", StringComparison.OrdinalIgnoreCase))
 			{
 				return true;
 			}

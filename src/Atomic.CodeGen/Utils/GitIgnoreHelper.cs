@@ -15,19 +15,19 @@ public static class GitIgnoreHelper
 			Logger.LogVerbose("No .gitignore found, skipping");
 			return false;
 		}
-		string text = File.ReadAllText(path);
-		string[] array = text.Split(new string[2] { "\r\n", "\n" }, StringSplitOptions.None);
-		for (int i = 0; i < array.Length; i++)
+		string gitignoreContent = File.ReadAllText(path);
+		string[] lines = gitignoreContent.Split(new string[2] { "\r\n", "\n" }, StringSplitOptions.None);
+		for (int i = 0; i < lines.Length; i++)
 		{
-			string text2 = array[i].Trim();
-			if (text2 == ".rename-backup" || text2 == ".rename-backup/")
+			string trimmedLine = lines[i].Trim();
+			if (trimmedLine == ".rename-backup" || trimmedLine == ".rename-backup/")
 			{
 				Logger.LogVerbose(".rename-backup already in .gitignore");
 				return false;
 			}
 		}
-		string text3 = (text.EndsWith("\n") ? "" : Environment.NewLine);
-		string contents = text + text3 + ".rename-backup/" + Environment.NewLine;
+		string trailingNewline = (gitignoreContent.EndsWith("\n") ? "" : Environment.NewLine);
+		string contents = gitignoreContent + trailingNewline + ".rename-backup/" + Environment.NewLine;
 		File.WriteAllText(path, contents);
 		Logger.LogInfo("Added .rename-backup/ to .gitignore");
 		return true;

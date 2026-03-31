@@ -11,11 +11,11 @@ public static class EntityInstallerGenerators
 {
 	public static async Task GenerateScriptableInstallerAsync(EntityDomainDefinition definition, CodeGenConfig config, string outputDir)
 	{
-		bool flag = definition.Installers.HasFlag(EntityInstallerMode.ScriptableEntityInstaller) && definition.Installers.HasFlag(EntityInstallerMode.SceneEntityInstaller);
-		string text = (flag ? "Scriptable" : "");
-		string fileName = text + definition.EntityName + "Installer.cs";
+		bool hasBothInstallers = definition.Installers.HasFlag(EntityInstallerMode.ScriptableEntityInstaller) && definition.Installers.HasFlag(EntityInstallerMode.SceneEntityInstaller);
+		string prefix = (hasBothInstallers ? "Scriptable" : "");
+		string fileName = prefix + definition.EntityName + "Installer.cs";
 		string filePath = Path.Combine(outputDir, fileName);
-		string contents = GenerateInstallerContent(definition, config, fileName, isScriptable: true, flag);
+		string contents = GenerateInstallerContent(definition, config, fileName, isScriptable: true, hasBothInstallers);
 		await File.WriteAllTextAsync(filePath, contents);
 		await EntityDomainFileHelper.GenerateMetaFileAsync(filePath);
 		await EntityDomainFileHelper.LinkToProjectsAsync(definition, config, filePath);
@@ -24,11 +24,11 @@ public static class EntityInstallerGenerators
 
 	public static async Task GenerateSceneInstallerAsync(EntityDomainDefinition definition, CodeGenConfig config, string outputDir)
 	{
-		bool flag = definition.Installers.HasFlag(EntityInstallerMode.ScriptableEntityInstaller) && definition.Installers.HasFlag(EntityInstallerMode.SceneEntityInstaller);
-		string text = (flag ? "Scene" : "");
-		string fileName = text + definition.EntityName + "Installer.cs";
+		bool hasBothInstallers = definition.Installers.HasFlag(EntityInstallerMode.ScriptableEntityInstaller) && definition.Installers.HasFlag(EntityInstallerMode.SceneEntityInstaller);
+		string prefix = (hasBothInstallers ? "Scene" : "");
+		string fileName = prefix + definition.EntityName + "Installer.cs";
 		string filePath = Path.Combine(outputDir, fileName);
-		string contents = GenerateInstallerContent(definition, config, fileName, isScriptable: false, flag);
+		string contents = GenerateInstallerContent(definition, config, fileName, isScriptable: false, hasBothInstallers);
 		await File.WriteAllTextAsync(filePath, contents);
 		await EntityDomainFileHelper.GenerateMetaFileAsync(filePath);
 		await EntityDomainFileHelper.LinkToProjectsAsync(definition, config, filePath);
@@ -53,12 +53,12 @@ public static class EntityInstallerGenerators
 		sb.AppendLine();
 		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();
@@ -83,9 +83,9 @@ public static class EntityInstallerGenerators
 			sb.AppendLine("    /// In the Editor, it supports automatic refresh via <c>OnValidate</c>.");
 		}
 		sb.AppendLine("    /// </remarks>");
-		string value = ((!usePrefixes) ? "" : (isScriptable ? "Scriptable" : "Scene"));
-		string value2 = (isScriptable ? "ScriptableEntityInstaller" : "SceneEntityInstaller");
-		sb.AppendLine($"    public abstract class {value}{definition.EntityName}Installer : {value2}<I{definition.EntityName}>");
+		string classPrefix = ((!usePrefixes) ? "" : (isScriptable ? "Scriptable" : "Scene"));
+		string baseClassName = (isScriptable ? "ScriptableEntityInstaller" : "SceneEntityInstaller");
+		sb.AppendLine($"    public abstract class {classPrefix}{definition.EntityName}Installer : {baseClassName}<I{definition.EntityName}>");
 		sb.AppendLine("    {");
 		sb.AppendLine("    }");
 		sb.AppendLine("}");
@@ -99,12 +99,12 @@ public static class EntityInstallerGenerators
 		sb.AppendLine();
 		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();

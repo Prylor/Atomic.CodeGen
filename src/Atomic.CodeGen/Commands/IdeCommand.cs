@@ -17,12 +17,12 @@ public static class IdeCommand
 				AnsiConsole.Write(new FigletText("IDE Setup").LeftJustified().Color(Color.Blue));
 				AnsiConsole.Write(new Rule("[bold blue]Atomic CodeGen - IDE Integration[/]"));
 				AnsiConsole.WriteLine();
-				string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select your IDE:[/]").AddChoices("JetBrains Rider", "Exit"));
-				if (text.Contains("Exit"))
+				string selectedIde = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select your IDE:[/]").AddChoices("JetBrains Rider", "Exit"));
+				if (selectedIde.Contains("Exit"))
 				{
 					break;
 				}
-				if (text.Contains("Rider"))
+				if (selectedIde.Contains("Rider"))
 				{
 					ShowRiderMenu();
 				}
@@ -39,22 +39,22 @@ public static class IdeCommand
 			AnsiConsole.Write(new FigletText("Rider").LeftJustified().Color(Color.Purple));
 			AnsiConsole.Write(new Rule("[bold purple]JetBrains Rider Integration[/]"));
 			AnsiConsole.WriteLine();
-			string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to set up?[/]").PageSize(10).AddChoices("Entity API Live Template (eapi)", "Entity Domain Live Template (edom)", "─────────────────────────────────", "Atomic Generate External Tool", "Atomic Rename External Tool", "─────────────────────────────────", "Back to IDE Selection"));
-			if (!text.Contains("Back"))
+			string selectedSetup = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to set up?[/]").PageSize(10).AddChoices("Entity API Live Template (eapi)", "Entity Domain Live Template (edom)", "─────────────────────────────────", "Atomic Generate External Tool", "Atomic Rename External Tool", "─────────────────────────────────", "Back to IDE Selection"));
+			if (!selectedSetup.Contains("Back"))
 			{
-				if (text.Contains("Entity API Live Template"))
+				if (selectedSetup.Contains("Entity API Live Template"))
 				{
 					ShowEntityApiTemplate();
 				}
-				else if (text.Contains("Entity Domain Live Template"))
+				else if (selectedSetup.Contains("Entity Domain Live Template"))
 				{
 					ShowEntityDomainTemplate();
 				}
-				else if (text.Contains("Atomic Generate"))
+				else if (selectedSetup.Contains("Atomic Generate"))
 				{
 					ShowGenerateExternalTool();
 				}
-				else if (text.Contains("Atomic Rename"))
+				else if (selectedSetup.Contains("Atomic Rename"))
 				{
 					ShowRenameExternalTool();
 				}
@@ -203,8 +203,8 @@ public static class IdeCommand
 				.AddColumn("[bold]Description[/]");
 			for (int i = 0; i < variables.Length; i++)
 			{
-				var (text, text2, text3) = variables[i];
-				table.AddRow(text, "[dim]" + text2 + "[/]", text3);
+				var (variableName, expression, variableDescription) = variables[i];
+				table.AddRow(variableName, "[dim]" + expression + "[/]", variableDescription);
 			}
 			AnsiConsole.Write(new Panel(table)
 			{
@@ -212,10 +212,10 @@ public static class IdeCommand
 				Border = BoxBorder.Rounded
 			});
 			AnsiConsole.WriteLine();
-			string text4 = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Options:[/]").AddChoices("Show raw (for copying)", "Back"));
-			if (!text4.Contains("Back"))
+			string selectedAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Options:[/]").AddChoices("Show raw (for copying)", "Back"));
+			if (!selectedAction.Contains("Back"))
 			{
-				if (text4.Contains("raw"))
+				if (selectedAction.Contains("raw"))
 				{
 					AnsiConsole.Clear();
 					AnsiConsole.Write(new Rule("[bold blue]" + title + " - Raw Template[/]"));

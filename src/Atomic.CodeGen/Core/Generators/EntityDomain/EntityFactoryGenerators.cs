@@ -11,11 +11,11 @@ public static class EntityFactoryGenerators
 {
 	public static async Task GenerateScriptableFactoryAsync(EntityDomainDefinition definition, CodeGenConfig config, string outputDir)
 	{
-		bool flag = definition.Factories.HasFlag(EntityFactoryMode.ScriptableEntityFactory) && definition.Factories.HasFlag(EntityFactoryMode.SceneEntityFactory);
-		string text = (flag ? "Scriptable" : "");
-		string fileName = text + definition.EntityName + "Factory.cs";
+		bool hasBothFactories = definition.Factories.HasFlag(EntityFactoryMode.ScriptableEntityFactory) && definition.Factories.HasFlag(EntityFactoryMode.SceneEntityFactory);
+		string prefix = (hasBothFactories ? "Scriptable" : "");
+		string fileName = prefix + definition.EntityName + "Factory.cs";
 		string filePath = Path.Combine(outputDir, fileName);
-		string contents = GenerateFactoryContent(definition, config, fileName, isScriptable: true, flag);
+		string contents = GenerateFactoryContent(definition, config, fileName, isScriptable: true, hasBothFactories);
 		await File.WriteAllTextAsync(filePath, contents);
 		await EntityDomainFileHelper.GenerateMetaFileAsync(filePath);
 		await EntityDomainFileHelper.LinkToProjectsAsync(definition, config, filePath);
@@ -24,11 +24,11 @@ public static class EntityFactoryGenerators
 
 	public static async Task GenerateSceneFactoryAsync(EntityDomainDefinition definition, CodeGenConfig config, string outputDir)
 	{
-		bool flag = definition.Factories.HasFlag(EntityFactoryMode.ScriptableEntityFactory) && definition.Factories.HasFlag(EntityFactoryMode.SceneEntityFactory);
-		string text = (flag ? "Scene" : "");
-		string fileName = text + definition.EntityName + "Factory.cs";
+		bool hasBothFactories = definition.Factories.HasFlag(EntityFactoryMode.ScriptableEntityFactory) && definition.Factories.HasFlag(EntityFactoryMode.SceneEntityFactory);
+		string prefix = (hasBothFactories ? "Scene" : "");
+		string fileName = prefix + definition.EntityName + "Factory.cs";
 		string filePath = Path.Combine(outputDir, fileName);
-		string contents = GenerateFactoryContent(definition, config, fileName, isScriptable: false, flag);
+		string contents = GenerateFactoryContent(definition, config, fileName, isScriptable: false, hasBothFactories);
 		await File.WriteAllTextAsync(filePath, contents);
 		await EntityDomainFileHelper.GenerateMetaFileAsync(filePath);
 		await EntityDomainFileHelper.LinkToProjectsAsync(definition, config, filePath);
@@ -42,12 +42,12 @@ public static class EntityFactoryGenerators
 		sb.AppendLine();
 		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();
@@ -71,9 +71,9 @@ public static class EntityFactoryGenerators
 			sb.AppendLine("    /// Override the <see cref=\"Install\"/> method to customize entity initialization.");
 		}
 		sb.AppendLine("    /// </remarks>");
-		string value = ((!usePrefixes) ? "" : (isScriptable ? "Scriptable" : "Scene"));
-		string value2 = (isScriptable ? "ScriptableEntityFactory" : "SceneEntityFactory");
-		sb.AppendLine($"    public abstract class {value}{definition.EntityName}Factory : {value2}<I{definition.EntityName}>");
+		string classPrefix = ((!usePrefixes) ? "" : (isScriptable ? "Scriptable" : "Scene"));
+		string baseClassName = (isScriptable ? "ScriptableEntityFactory" : "SceneEntityFactory");
+		sb.AppendLine($"    public abstract class {classPrefix}{definition.EntityName}Factory : {baseClassName}<I{definition.EntityName}>");
 		sb.AppendLine("    {");
 		sb.AppendLine("        public string Name => this.name;");
 		sb.AppendLine();

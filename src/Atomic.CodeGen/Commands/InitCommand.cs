@@ -16,8 +16,8 @@ public static class InitCommand
 	{
 		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
 		Option<bool> option2 = new Option<bool>(new string[2] { "--quick", "-q" }, () => false, "Skip interactive setup and use defaults");
-		Command obj = new Command("init", "Initialize configuration file (interactive)") { option, option2 };
-		obj.SetHandler(async delegate(string projectPath, bool quick)
+		Command command = new Command("init", "Initialize configuration file (interactive)") { option, option2 };
+		command.SetHandler(async delegate(string projectPath, bool quick)
 		{
 			AnsiConsole.Write(new FigletText("Atomic CodeGen").LeftJustified().Color(Color.Blue));
 			AnsiConsole.Write(new Rule("[bold blue]Configuration Setup[/]"));
@@ -63,7 +63,7 @@ public static class InitCommand
 				AnsiConsole.MarkupLine("[dim]Run [blue]atomic-codegen configure[/] to modify settings[/]");
 			}
 		}, option, option2);
-		return obj;
+		return command;
 	}
 
 	private static Task<CodeGenConfig> RunInteractiveSetupAsync(string projectPath)
@@ -80,9 +80,9 @@ public static class InitCommand
 		codeGenConfig.TrackOrphans = AnsiConsole.Confirm("Enable orphan file tracking?");
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold]3. Code Formatting[/]");
-		string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Indentation style:").AddChoices("Spaces (4)", "Spaces (2)", "Tabs"));
+		string indentationChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Indentation style:").AddChoices("Spaces (4)", "Spaces (2)", "Tabs"));
 		CodeGenConfig codeGenConfig2 = codeGenConfig;
-		codeGenConfig2.Formatting = text switch
+		codeGenConfig2.Formatting = indentationChoice switch
 		{
 			"Spaces (4)" => new FormattingOptions
 			{
@@ -104,37 +104,37 @@ public static class InitCommand
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold]4. Fallback Scan Paths[/]");
 		AnsiConsole.MarkupLine("[dim]Used when no solution file is found (Roslyn is primary)[/]");
-		string text2 = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Scan path configuration:").AddChoices("Default (Assets/**/*EntityAPI*.cs)", "All C# files (Assets/**/*.cs)", "Custom patterns"));
+		string scanPathChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Scan path configuration:").AddChoices("Default (Assets/**/*EntityAPI*.cs)", "All C# files (Assets/**/*.cs)", "Custom patterns"));
 		codeGenConfig2 = codeGenConfig;
-		List<string> scanPaths = ((text2 == "All C# files (Assets/**/*.cs)") ? new List<string> { "Assets/**/*.cs", "Packages/**/*.cs" } : ((!(text2 == "Custom patterns")) ? new List<string> { "Assets/**/*EntityAPI*.cs", "Packages/**/*EntityAPI*.cs" } : PromptForPatterns("scan")));
+		List<string> scanPaths = ((scanPathChoice == "All C# files (Assets/**/*.cs)") ? new List<string> { "Assets/**/*.cs", "Packages/**/*.cs" } : ((!(scanPathChoice == "Custom patterns")) ? new List<string> { "Assets/**/*EntityAPI*.cs", "Packages/**/*EntityAPI*.cs" } : PromptForPatterns("scan")));
 		codeGenConfig2.ScanPaths = scanPaths;
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold]5. Exclude Paths[/]");
-		string text3 = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Exclude path configuration:").AddChoices("Default (obj, Library, Temp, *.g.cs)", "Add custom exclusions", "Only custom patterns"));
+		string excludePathChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Exclude path configuration:").AddChoices("Default (obj, Library, Temp, *.g.cs)", "Add custom exclusions", "Only custom patterns"));
 		codeGenConfig2 = codeGenConfig;
-		scanPaths = ((text3 == "Add custom exclusions") ? GetDefaultExcludePaths().Concat(PromptForPatterns("exclude")).ToList() : ((!(text3 == "Only custom patterns")) ? GetDefaultExcludePaths() : PromptForPatterns("exclude")));
+		scanPaths = ((excludePathChoice == "Add custom exclusions") ? GetDefaultExcludePaths().Concat(PromptForPatterns("exclude")).ToList() : ((!(excludePathChoice == "Only custom patterns")) ? GetDefaultExcludePaths() : PromptForPatterns("exclude")));
 		codeGenConfig2.ExcludePaths = scanPaths;
 		return Task.FromResult(codeGenConfig);
 	}
 
 	private static List<string> PromptForPatterns(string patternType)
 	{
-		List<string> list = new List<string>();
+		List<string> patterns = new List<string>();
 		AnsiConsole.MarkupLine("[dim]Enter " + patternType + " patterns (empty line to finish):[/]");
 		while (true)
 		{
-			string text = AnsiConsole.Prompt(new TextPrompt<string>($"[dim]Pattern {list.Count + 1}:[/]").AllowEmpty());
-			if (string.IsNullOrWhiteSpace(text))
+			string pattern = AnsiConsole.Prompt(new TextPrompt<string>($"[dim]Pattern {patterns.Count + 1}:[/]").AllowEmpty());
+			if (string.IsNullOrWhiteSpace(pattern))
 			{
 				break;
 			}
-			list.Add(text);
+			patterns.Add(pattern);
 		}
-		if (list.Count <= 0)
+		if (patterns.Count <= 0)
 		{
 			return GetDefaultScanPaths();
 		}
-		return list;
+		return patterns;
 	}
 
 	private static void ShowConfigPreview(CodeGenConfig config)

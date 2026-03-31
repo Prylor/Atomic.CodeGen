@@ -17,8 +17,8 @@ public static class EntityDomainScanner
 	public static async Task<Dictionary<string, EntityDomainDefinition>> ScanAsync(CodeGenConfig config)
 	{
 		Dictionary<string, EntityDomainDefinition> results = new Dictionary<string, EntityDomainDefinition>();
-		List<string> list = new FileScanner(config).Scan();
-		foreach (string filePath in list)
+		List<string> scannedFiles = new FileScanner(config).Scan();
+		foreach (string filePath in scannedFiles)
 		{
 			EntityDomainDefinition entityDomainDefinition = await ParseFileAsync(filePath, config);
 			if (entityDomainDefinition != null)
@@ -34,21 +34,21 @@ public static class EntityDomainScanner
 		_ = 2;
 		try
 		{
-			if (!(await CSharpSyntaxTree.ParseText(await File.ReadAllTextAsync(filePath)).GetRootAsync() is CompilationUnitSyntax compilationUnitSyntax))
+			if (!(await CSharpSyntaxTree.ParseText(await File.ReadAllTextAsync(filePath)).GetRootAsync() is CompilationUnitSyntax syntaxRoot))
 			{
 				return null;
 			}
-			ClassDeclarationSyntax classDeclarationSyntax = compilationUnitSyntax.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault((ClassDeclarationSyntax c) => ImplementsInterface(c, "IEntityDomain"));
-			if (classDeclarationSyntax != null)
+			ClassDeclarationSyntax domainClass = syntaxRoot.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault((ClassDeclarationSyntax c) => ImplementsInterface(c, "IEntityDomain"));
+			if (domainClass != null)
 			{
-				Logger.LogVerbose("Found IEntityDomain implementation: " + classDeclarationSyntax.Identifier.Text + " in " + filePath);
-				return ParseDomainClass(classDeclarationSyntax, filePath, compilationUnitSyntax, config);
+				Logger.LogVerbose("Found IEntityDomain implementation: " + domainClass.Identifier.Text + " in " + filePath);
+				return ParseDomainClass(domainClass, filePath, syntaxRoot, config);
 			}
-			ClassDeclarationSyntax classDeclarationSyntax2 = compilationUnitSyntax.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault((ClassDeclarationSyntax c) => InheritsFrom(c, "EntityDomainBuilder"));
-			if (classDeclarationSyntax2 != null)
+			ClassDeclarationSyntax builderClass = syntaxRoot.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault((ClassDeclarationSyntax c) => InheritsFrom(c, "EntityDomainBuilder"));
+			if (builderClass != null)
 			{
-				Logger.LogVerbose("Found EntityDomainBuilder subclass: " + classDeclarationSyntax2.Identifier.Text + " in " + filePath);
-				return await ParseBuilderClassAsync(classDeclarationSyntax2, filePath, compilationUnitSyntax, config);
+				Logger.LogVerbose("Found EntityDomainBuilder subclass: " + builderClass.Identifier.Text + " in " + filePath);
+				return await ParseBuilderClassAsync(builderClass, filePath, syntaxRoot, config);
 			}
 			return null;
 		}
@@ -81,29 +81,29 @@ public static class EntityDomainScanner
 	{
 		try
 		{
-			EntityDomainDefinition entityDomainDefinition = new EntityDomainDefinition
+			EntityDomainDefinition definition = new EntityDomainDefinition
 			{
 				SourceFile = sourceFile,
 				ClassName = classDecl.Identifier.Text
 			};
-			entityDomainDefinition.DetectedImports = (from u in root.Usings
+			definition.DetectedImports = (from u in root.Usings
 				select u.Name?.ToString() into name
 				where !string.IsNullOrWhiteSpace(name)
 				select (name)).ToList();
-			entityDomainDefinition.EntityName = GetPropertyValue(classDecl, "EntityName") ?? throw new Exception("EntityName is required in " + classDecl.Identifier.Text);
-			entityDomainDefinition.Namespace = GetPropertyValue(classDecl, "Namespace") ?? throw new Exception("Namespace is required in " + classDecl.Identifier.Text);
-			entityDomainDefinition.Directory = GetPropertyValue(classDecl, "Directory") ?? ("Assets/Scripts/Generated/" + entityDomainDefinition.EntityName);
-			MethodDeclarationSyntax methodDeclarationSyntax = classDecl.Members.OfType<MethodDeclarationSyntax>().FirstOrDefault((MethodDeclarationSyntax m) => m.Identifier.Text == "Configure");
-			if (methodDeclarationSyntax == null || methodDeclarationSyntax.Body == null)
+			definition.EntityName = GetPropertyValue(classDecl, "EntityName") ?? throw new Exception("EntityName is required in " + classDecl.Identifier.Text);
+			definition.Namespace = GetPropertyValue(classDecl, "Namespace") ?? throw new Exception("Namespace is required in " + classDecl.Identifier.Text);
+			definition.Directory = GetPropertyValue(classDecl, "Directory") ?? ("Assets/Scripts/Generated/" + definition.EntityName);
+			MethodDeclarationSyntax configureMethod = classDecl.Members.OfType<MethodDeclarationSyntax>().FirstOrDefault((MethodDeclarationSyntax m) => m.Identifier.Text == "Configure");
+			if (configureMethod == null || configureMethod.Body == null)
 			{
 				Logger.LogWarning("Configure() method not found or empty in " + classDecl.Identifier.Text);
-				return Task.FromResult(entityDomainDefinition);
+				return Task.FromResult(definition);
 			}
-			if (ParseConfigureMethodCalls(methodDeclarationSyntax.Body, entityDomainDefinition))
+			if (ParseConfigureMethodCalls(configureMethod.Body, definition))
 			{
 				return Task.FromResult<EntityDomainDefinition>(null);
 			}
-			return Task.FromResult(entityDomainDefinition);
+			return Task.FromResult(definition);
 		}
 		catch (Exception ex)
 		{
@@ -114,28 +114,28 @@ public static class EntityDomainScanner
 
 	private static bool ParseConfigureMethodCalls(BlockSyntax methodBody, EntityDomainDefinition definition)
 	{
-		IEnumerable<InvocationExpressionSyntax> enumerable = methodBody.DescendantNodes().OfType<InvocationExpressionSyntax>();
-		int num = 0;
-		bool result = false;
-		foreach (InvocationExpressionSyntax item in enumerable)
+		IEnumerable<InvocationExpressionSyntax> invocations = methodBody.DescendantNodes().OfType<InvocationExpressionSyntax>();
+		int modeCallCount = 0;
+		bool hasError = false;
+		foreach (InvocationExpressionSyntax invocation in invocations)
 		{
-			switch (GetMethodName(item))
+			switch (GetMethodName(invocation))
 			{
 			case "EntityMode":
 				definition.Mode = EntityMode.Entity;
-				num++;
+				modeCallCount++;
 				break;
 			case "EntitySingletonMode":
 				definition.Mode = EntityMode.EntitySingleton;
-				num++;
+				modeCallCount++;
 				break;
 			case "SceneEntityMode":
 				definition.Mode = EntityMode.SceneEntity;
-				num++;
+				modeCallCount++;
 				break;
 			case "SceneEntitySingletonMode":
 				definition.Mode = EntityMode.SceneEntitySingleton;
-				num++;
+				modeCallCount++;
 				break;
 			case "GenerateProxy":
 				definition.GenerateProxy = true;
@@ -189,24 +189,24 @@ public static class EntityDomainScanner
 				definition.Views |= EntityViewMode.EntityCollectionView;
 				break;
 			case "ExcludeImports":
-				definition.ExcludeImports = GetStringArrayArgument(item);
+				definition.ExcludeImports = GetStringArrayArgument(invocation);
 				break;
 			case "TargetProject":
-				definition.TargetProject = GetStringArgument(item) ?? "";
+				definition.TargetProject = GetStringArgument(invocation) ?? "";
 				break;
 			}
 		}
-		if (num == 0)
+		if (modeCallCount == 0)
 		{
 			Logger.LogWarning("No entity mode specified in " + definition.ClassName + ". Defaulting to EntityMode.");
 			definition.Mode = EntityMode.Entity;
 		}
-		else if (num > 1)
+		else if (modeCallCount > 1)
 		{
 			Logger.LogError("Multiple entity modes specified in " + definition.ClassName + ". Choose only ONE: EntityMode(), EntitySingletonMode(), SceneEntityMode(), or SceneEntitySingletonMode()");
-			result = true;
+			hasError = true;
 		}
-		return result;
+		return hasError;
 	}
 
 	private static string? GetMethodName(InvocationExpressionSyntax invocation)
@@ -246,57 +246,54 @@ public static class EntityDomainScanner
 
 	private static EntityDomainDefinition ParseDomainClass(ClassDeclarationSyntax classDecl, string sourceFile, CompilationUnitSyntax root, CodeGenConfig config)
 	{
-		EntityDomainDefinition entityDomainDefinition = new EntityDomainDefinition
+		EntityDomainDefinition definition = new EntityDomainDefinition
 		{
 			SourceFile = sourceFile,
 			ClassName = classDecl.Identifier.Text
 		};
-		entityDomainDefinition.DetectedImports = (from u in root.Usings
+		definition.DetectedImports = (from u in root.Usings
 			select u.Name?.ToString() into name
 			where !string.IsNullOrWhiteSpace(name)
 			select (name)).ToList();
-		entityDomainDefinition.EntityName = GetPropertyValue(classDecl, "EntityName") ?? throw new Exception("EntityName is required in " + classDecl.Identifier.Text);
-		entityDomainDefinition.Namespace = GetPropertyValue(classDecl, "Namespace") ?? throw new Exception("Namespace is required in " + classDecl.Identifier.Text);
-		entityDomainDefinition.Directory = GetPropertyValue(classDecl, "Directory") ?? ("Assets/Scripts/Generated/" + entityDomainDefinition.EntityName);
-		entityDomainDefinition.Mode = GetEnumPropertyValue<EntityMode>(classDecl, "Mode").GetValueOrDefault();
-		bool? boolPropertyValue = GetBoolPropertyValue(classDecl, "GenerateProxy");
-		EntityDomainDefinition entityDomainDefinition2 = entityDomainDefinition;
-		bool? flag = boolPropertyValue;
-		bool generateProxy;
-		if (flag.HasValue)
+		definition.EntityName = GetPropertyValue(classDecl, "EntityName") ?? throw new Exception("EntityName is required in " + classDecl.Identifier.Text);
+		definition.Namespace = GetPropertyValue(classDecl, "Namespace") ?? throw new Exception("Namespace is required in " + classDecl.Identifier.Text);
+		definition.Directory = GetPropertyValue(classDecl, "Directory") ?? ("Assets/Scripts/Generated/" + definition.EntityName);
+		definition.Mode = GetEnumPropertyValue<EntityMode>(classDecl, "Mode").GetValueOrDefault();
+		bool? proxyOverride = GetBoolPropertyValue(classDecl, "GenerateProxy");
+		bool shouldGenerateProxy;
+		if (proxyOverride.HasValue)
 		{
-			generateProxy = flag == true;
+			shouldGenerateProxy = proxyOverride == true;
 		}
 		else
 		{
-			EntityMode mode = entityDomainDefinition.Mode;
-			bool flag2 = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
-			generateProxy = flag2;
+			EntityMode mode = definition.Mode;
+			bool isSceneMode = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
+			shouldGenerateProxy = isSceneMode;
 		}
-		entityDomainDefinition2.GenerateProxy = generateProxy;
-		bool? boolPropertyValue2 = GetBoolPropertyValue(classDecl, "GenerateWorld");
-		entityDomainDefinition2 = entityDomainDefinition;
-		flag = boolPropertyValue2;
-		if (flag.HasValue)
+		definition.GenerateProxy = shouldGenerateProxy;
+		bool? worldOverride = GetBoolPropertyValue(classDecl, "GenerateWorld");
+		bool shouldGenerateWorld;
+		if (worldOverride.HasValue)
 		{
-			generateProxy = flag == true;
+			shouldGenerateWorld = worldOverride == true;
 		}
 		else
 		{
-			EntityMode mode = entityDomainDefinition.Mode;
-			bool flag2 = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
-			generateProxy = flag2;
+			EntityMode mode = definition.Mode;
+			bool isSceneMode = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
+			shouldGenerateWorld = isSceneMode;
 		}
-		entityDomainDefinition2.GenerateWorld = generateProxy;
-		entityDomainDefinition.Installers = GetEnumPropertyValue<EntityInstallerMode>(classDecl, "Installers").GetValueOrDefault();
-		entityDomainDefinition.Aspects = GetEnumPropertyValue<EntityAspectMode>(classDecl, "Aspects").GetValueOrDefault();
-		entityDomainDefinition.Pools = GetEnumPropertyValue<EntityPoolMode>(classDecl, "Pools").GetValueOrDefault();
-		entityDomainDefinition.Factories = GetEnumPropertyValue<EntityFactoryMode>(classDecl, "Factories").GetValueOrDefault();
-		entityDomainDefinition.Bakers = GetEnumPropertyValue<EntityBakerMode>(classDecl, "Bakers").GetValueOrDefault();
-		entityDomainDefinition.Views = GetEnumPropertyValue<EntityViewMode>(classDecl, "Views").GetValueOrDefault();
-		entityDomainDefinition.ExcludeImports = GetStringArrayPropertyValue(classDecl, "ExcludeImports");
-		entityDomainDefinition.TargetProject = GetPropertyValue(classDecl, "TargetProject");
-		return entityDomainDefinition;
+		definition.GenerateWorld = shouldGenerateWorld;
+		definition.Installers = GetEnumPropertyValue<EntityInstallerMode>(classDecl, "Installers").GetValueOrDefault();
+		definition.Aspects = GetEnumPropertyValue<EntityAspectMode>(classDecl, "Aspects").GetValueOrDefault();
+		definition.Pools = GetEnumPropertyValue<EntityPoolMode>(classDecl, "Pools").GetValueOrDefault();
+		definition.Factories = GetEnumPropertyValue<EntityFactoryMode>(classDecl, "Factories").GetValueOrDefault();
+		definition.Bakers = GetEnumPropertyValue<EntityBakerMode>(classDecl, "Bakers").GetValueOrDefault();
+		definition.Views = GetEnumPropertyValue<EntityViewMode>(classDecl, "Views").GetValueOrDefault();
+		definition.ExcludeImports = GetStringArrayPropertyValue(classDecl, "ExcludeImports");
+		definition.TargetProject = GetPropertyValue(classDecl, "TargetProject");
+		return definition;
 	}
 
 	private static string? GetPropertyValue(ClassDeclarationSyntax classDecl, string propertyName)
@@ -356,14 +353,14 @@ public static class EntityDomainScanner
 
 	private static T ParseFlagsExpression<T>(BinaryExpressionSyntax binaryExpr) where T : struct, Enum
 	{
-		List<T> list = new List<T>();
-		CollectFlagValues(binaryExpr, list);
-		int num = 0;
-		foreach (T item in list)
+		List<T> flagValues = new List<T>();
+		CollectFlagValues(binaryExpr, flagValues);
+		int combinedFlags = 0;
+		foreach (T flagValue in flagValues)
 		{
-			num |= Convert.ToInt32(item);
+			combinedFlags |= Convert.ToInt32(flagValue);
 		}
-		return (T)(object)num;
+		return (T)(object)combinedFlags;
 	}
 
 	private static void CollectFlagValues<T>(ExpressionSyntax expr, List<T> values) where T : struct, Enum

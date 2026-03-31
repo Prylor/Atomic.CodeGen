@@ -23,14 +23,14 @@ public class EntityDomainOrchestrator
 	{
 		try
 		{
-			string[] array = _definition.Validate();
-			if (array.Length != 0)
+			string[] validationErrors = _definition.Validate();
+			if (validationErrors.Length != 0)
 			{
 				Logger.LogError("Invalid EntityDomain definition in " + _definition.SourceFile + ":");
-				string[] array2 = array;
-				foreach (string text in array2)
+				string[] errorArray = validationErrors;
+				foreach (string errorMessage in errorArray)
 				{
-					Logger.LogError("  - " + text);
+					Logger.LogError("  - " + errorMessage);
 				}
 				return false;
 			}

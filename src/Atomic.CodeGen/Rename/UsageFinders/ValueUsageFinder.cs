@@ -12,14 +12,14 @@ public sealed class ValueUsageFinder : IUsageFinder
 
 	public List<UsageMatch> FindUsages(RenameContext context, IEnumerable<string> files, ApiRegistry registry, ImportAnalyzer importAnalyzer)
 	{
-		List<UsageMatch> list = new List<UsageMatch>();
+		List<UsageMatch> results = new List<UsageMatch>();
 		string oldName = context.OldName;
 		string newName = context.NewName;
-		ApiEntry byClassName = registry.GetByClassName(context.OwnerName);
-		if (byClassName == null)
+		ApiEntry ownerApi = registry.GetByClassName(context.OwnerName);
+		if (ownerApi == null)
 		{
 			context.Errors.Add("Could not find API '" + context.OwnerName + "' in registry");
-			return list;
+			return results;
 		}
 		(string, string, string)[] array = new(string, string, string)[7]
 		{
@@ -40,88 +40,88 @@ public sealed class ValueUsageFinder : IUsageFinder
 			}
 			string[] array2 = File.ReadAllText(file).Split('\n');
 			FileImports imports = importAnalyzer.GetImports(file);
-			List<ApiEntry> list2 = (from a in registry.GetApisWithValue(oldName)
+			List<ApiEntry> accessibleApis = (from a in registry.GetApisWithValue(oldName)
 				where imports.HasNamespaceImport(a.Namespace)
 				select a).ToList();
 			(string, string, string)[] array3 = array;
 			string[] array4;
-			for (int num = 0; num < array3.Length; num++)
+			for (int i = 0; i < array3.Length; i++)
 			{
-				(string, string, string) tuple = array3[num];
-				string item = tuple.Item1;
-				string item2 = tuple.Item2;
-				string item3 = tuple.Item3;
-				Regex regex = new Regex(item);
-				int num2 = 0;
+				(string, string, string) tuple = array3[i];
+				string methodPattern = tuple.Item1;
+				string methodReplacement = tuple.Item2;
+				string methodCategory = tuple.Item3;
+				Regex regex = new Regex(methodPattern);
+				int lineNumber = 0;
 				array4 = array2;
-				foreach (string text in array4)
+				foreach (string currentLine in array4)
 				{
-					num2++;
-					foreach (Match item4 in regex.Matches(text))
+					lineNumber++;
+					foreach (Match regexMatch in regex.Matches(currentLine))
 					{
-						bool flag = list2.Count > 1;
-						list.Add(new UsageMatch
+						bool isAmbiguous = accessibleApis.Count > 1;
+						results.Add(new UsageMatch
 						{
 							FilePath = file,
-							Line = num2,
-							Column = item4.Index + 1,
-							Length = item4.Length,
-							MatchedText = item4.Value,
-							ReplacementText = item2,
-							LineContext = text.TrimEnd('\r'),
-							Category = item3,
-							IsAmbiguous = flag,
-							PossibleApis = (flag ? list2.Select((ApiEntry a) => a.ClassName).ToList() : null)
+							Line = lineNumber,
+							Column = regexMatch.Index + 1,
+							Length = regexMatch.Length,
+							MatchedText = regexMatch.Value,
+							ReplacementText = methodReplacement,
+							LineContext = currentLine.TrimEnd('\r'),
+							Category = methodCategory,
+							IsAmbiguous = isAmbiguous,
+							PossibleApis = (isAmbiguous ? accessibleApis.Select((ApiEntry a) => a.ClassName).ToList() : null)
 						});
 					}
 				}
 			}
 			Regex regex2 = new Regex(pattern);
-			int num4 = 0;
+			int directRefLineNumber = 0;
 			array4 = array2;
-			foreach (string text2 in array4)
+			foreach (string currentLine in array4)
 			{
-				num4++;
-				foreach (Match item5 in regex2.Matches(text2))
+				directRefLineNumber++;
+				foreach (Match directRefMatch in regex2.Matches(currentLine))
 				{
-					string replacementText = item5.Groups[1].Value + "." + newName;
-					list.Add(new UsageMatch
+					string replacementText = directRefMatch.Groups[1].Value + "." + newName;
+					results.Add(new UsageMatch
 					{
 						FilePath = file,
-						Line = num4,
-						Column = item5.Index + 1,
-						Length = item5.Length,
-						MatchedText = item5.Value,
+						Line = directRefLineNumber,
+						Column = directRefMatch.Index + 1,
+						Length = directRefMatch.Length,
+						MatchedText = directRefMatch.Value,
 						ReplacementText = replacementText,
-						LineContext = text2.TrimEnd('\r'),
+						LineContext = currentLine.TrimEnd('\r'),
 						Category = "DirectReference",
 						IsAmbiguous = false
 					});
 				}
 			}
-			Regex regex3 = new Regex($"\\b{Regex.Escape(byClassName.Namespace)}\\.{Regex.Escape(context.OwnerName)}\\.{Regex.Escape(oldName)}\\b");
-			int num5 = 0;
+			Regex regex3 = new Regex($"\\b{Regex.Escape(ownerApi.Namespace)}\\.{Regex.Escape(context.OwnerName)}\\.{Regex.Escape(oldName)}\\b");
+			int fqnLineNumber = 0;
 			array4 = array2;
-			foreach (string text3 in array4)
+			foreach (string currentLine in array4)
 			{
-				num5++;
-				foreach (Match item6 in regex3.Matches(text3))
+				fqnLineNumber++;
+				foreach (Match fqnMatch in regex3.Matches(currentLine))
 				{
-					list.Add(new UsageMatch
+					results.Add(new UsageMatch
 					{
 						FilePath = file,
-						Line = num5,
-						Column = item6.Index + 1,
-						Length = item6.Length,
-						MatchedText = item6.Value,
-						ReplacementText = $"{byClassName.Namespace}.{context.OwnerName}.{newName}",
-						LineContext = text3.TrimEnd('\r'),
+						Line = fqnLineNumber,
+						Column = fqnMatch.Index + 1,
+						Length = fqnMatch.Length,
+						MatchedText = fqnMatch.Value,
+						ReplacementText = $"{ownerApi.Namespace}.{context.OwnerName}.{newName}",
+						LineContext = currentLine.TrimEnd('\r'),
 						Category = "FullyQualifiedReference",
 						IsAmbiguous = false
 					});
 				}
 			}
 		}
-		return list;
+		return results;
 	}
 }

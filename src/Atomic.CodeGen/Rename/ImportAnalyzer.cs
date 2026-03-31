@@ -14,9 +14,9 @@ public sealed class ImportAnalyzer
 
 	public FileImports GetImports(string filePath)
 	{
-		if (_cache.TryGetValue(filePath, out FileImports value))
+		if (_cache.TryGetValue(filePath, out FileImports cachedImports))
 		{
-			return value;
+			return cachedImports;
 		}
 		FileImports fileImports = ParseImports(filePath);
 		_cache[filePath] = fileImports;
@@ -64,9 +64,9 @@ public sealed class ImportAnalyzer
 				}
 				else if (current.Alias != null)
 				{
-					string key = current.Alias.Name.ToString();
-					string value = current.Name?.ToString() ?? string.Empty;
-					fileImports.Aliases[key] = value;
+					string aliasName = current.Alias.Name.ToString();
+					string aliasTarget = current.Name?.ToString() ?? string.Empty;
+					fileImports.Aliases[aliasName] = aliasTarget;
 				}
 				else
 				{
@@ -74,9 +74,9 @@ public sealed class ImportAnalyzer
 				}
 			}
 		}
-		foreach (BaseNamespaceDeclarationSyntax item in root.DescendantNodes().OfType<BaseNamespaceDeclarationSyntax>())
+		foreach (BaseNamespaceDeclarationSyntax namespaceDecl in root.DescendantNodes().OfType<BaseNamespaceDeclarationSyntax>())
 		{
-			SyntaxList<UsingDirectiveSyntax>.Enumerator enumerator = item.Usings.GetEnumerator();
+			SyntaxList<UsingDirectiveSyntax>.Enumerator enumerator = namespaceDecl.Usings.GetEnumerator();
 			while (enumerator.MoveNext())
 			{
 				UsingDirectiveSyntax current2 = enumerator.Current;
@@ -86,9 +86,9 @@ public sealed class ImportAnalyzer
 				}
 				else if (current2.Alias != null)
 				{
-					string key2 = current2.Alias.Name.ToString();
-					string value2 = current2.Name?.ToString() ?? string.Empty;
-					fileImports.Aliases[key2] = value2;
+					string nsAliasName = current2.Alias.Name.ToString();
+					string nsAliasTarget = current2.Name?.ToString() ?? string.Empty;
+					fileImports.Aliases[nsAliasName] = nsAliasTarget;
 				}
 				else
 				{

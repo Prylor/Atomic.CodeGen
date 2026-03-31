@@ -76,14 +76,14 @@ public sealed class SemanticWorkspace : IDisposable
 			_msbuildRegistered = true;
 			try
 			{
-				List<VisualStudioInstance> list = MSBuildLocator.QueryVisualStudioInstances().ToList();
-				if (list.Count == 0)
+				List<VisualStudioInstance> instances = MSBuildLocator.QueryVisualStudioInstances().ToList();
+				if (instances.Count == 0)
 				{
 					Logger.LogVerbose("No MSBuild instances found, will use Buildalyzer.");
 					_msbuildAvailable = false;
 					return false;
 				}
-				VisualStudioInstance visualStudioInstance = (from i in list
+				VisualStudioInstance visualStudioInstance = (from i in instances
 					orderby i.DiscoveryType == DiscoveryType.VisualStudioSetup descending, i.Version descending
 					select i).First();
 				MSBuildLocator.RegisterInstance(visualStudioInstance);
@@ -162,9 +162,9 @@ public sealed class SemanticWorkspace : IDisposable
 			_solution = await msbuildWorkspace.OpenSolutionAsync(_solutionPath);
 			_workspace = msbuildWorkspace;
 			_usingBuildalyzer = false;
-			int num = _solution.Projects.Count();
-			Logger.LogVerbose($"MSBuild loaded {num} projects");
-			return num > 0;
+			int loadedProjectCount = _solution.Projects.Count();
+			Logger.LogVerbose($"MSBuild loaded {loadedProjectCount} projects");
+			return loadedProjectCount > 0;
 		}
 		catch (Exception ex)
 		{
@@ -179,26 +179,26 @@ public sealed class SemanticWorkspace : IDisposable
 		{
 			Logger.LogVerbose("Initializing Buildalyzer...");
 			AnalyzerManager analyzerManager = new AnalyzerManager(_solutionPath);
-			List<IProjectAnalyzer> list = analyzerManager.Projects.Values.Where((IProjectAnalyzer p) => ShouldIncludeProject(p.ProjectFile.Name)).ToList();
-			int count = analyzerManager.Projects.Count;
-			int count2 = list.Count;
+			List<IProjectAnalyzer> filteredProjects = analyzerManager.Projects.Values.Where((IProjectAnalyzer p) => ShouldIncludeProject(p.ProjectFile.Name)).ToList();
+			int totalProjectCount = analyzerManager.Projects.Count;
+			int filteredProjectCount = filteredProjects.Count;
 			if (_includedProjects != null)
 			{
-				Logger.LogInfo($"Loading {count2}/{count} projects with Buildalyzer (filtered)...");
+				Logger.LogInfo($"Loading {filteredProjectCount}/{totalProjectCount} projects with Buildalyzer (filtered)...");
 			}
 			else
 			{
-				Logger.LogInfo($"Loading {count} projects with Buildalyzer (this may take a moment)...");
+				Logger.LogInfo($"Loading {totalProjectCount} projects with Buildalyzer (this may take a moment)...");
 			}
-			int num = 0;
+			int processedCount = 0;
 			AdhocWorkspace adhocWorkspace = new AdhocWorkspace();
-			foreach (IProjectAnalyzer item in list)
+			foreach (IProjectAnalyzer projectAnalyzer in filteredProjects)
 			{
-				num++;
-				Logger.LogVerbose($"  [{num}/{count2}] {item.ProjectFile.Name}");
+				processedCount++;
+				Logger.LogVerbose($"  [{processedCount}/{filteredProjectCount}] {projectAnalyzer.ProjectFile.Name}");
 				try
 				{
-					item.Build().FirstOrDefault()?.AddToWorkspace(adhocWorkspace);
+					projectAnalyzer.Build().FirstOrDefault()?.AddToWorkspace(adhocWorkspace);
 				}
 				catch (Exception ex)
 				{
@@ -208,9 +208,9 @@ public sealed class SemanticWorkspace : IDisposable
 			_solution = adhocWorkspace.CurrentSolution;
 			_workspace = adhocWorkspace;
 			_usingBuildalyzer = true;
-			int num2 = _solution.Projects.Count();
-			Logger.LogVerbose($"Buildalyzer loaded {num2} projects");
-			return num2 > 0;
+			int loadedProjectCount = _solution.Projects.Count();
+			Logger.LogVerbose($"Buildalyzer loaded {loadedProjectCount} projects");
+			return loadedProjectCount > 0;
 		}
 		catch (Exception ex2)
 		{
@@ -266,9 +266,9 @@ public sealed class SemanticWorkspace : IDisposable
 					continue;
 				}
 				SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
-				foreach (TypeDeclarationSyntax item in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>())
+				foreach (TypeDeclarationSyntax typeDecl in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>())
 				{
-					INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(item);
+					INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(typeDecl);
 					if (declaredSymbol != null)
 					{
 						types.Add(declaredSymbol);
@@ -291,9 +291,9 @@ public sealed class SemanticWorkspace : IDisposable
 		{
 			try
 			{
-				foreach (ReferencedSymbol item in await SymbolFinder.FindReferencesAsync(symbol, _solution))
+				foreach (ReferencedSymbol referencedSymbol in await SymbolFinder.FindReferencesAsync(symbol, _solution))
 				{
-					foreach (ReferenceLocation location in item.Locations)
+					foreach (ReferenceLocation location in referencedSymbol.Locations)
 					{
 						string filePath = location.Document.FilePath;
 						if (filePath != null && (limitToFilesSet == null || limitToFilesSet.Contains(Path.GetFullPath(filePath))))
@@ -318,17 +318,17 @@ public sealed class SemanticWorkspace : IDisposable
 		{
 			return usages;
 		}
-		List<INamedTypeSymbol> list = await GetDefinedTypesAsync(definitionFiles);
-		if (list.Count == 0)
+		List<INamedTypeSymbol> definedTypes = await GetDefinedTypesAsync(definitionFiles);
+		if (definedTypes.Count == 0)
 		{
 			Logger.LogVerbose("No types found in definition files");
 			return usages;
 		}
-		Logger.LogVerbose($"Found {list.Count} defined types");
-		foreach (ReferenceLocation item in await FindReferencesAsync(list, searchInFiles))
+		Logger.LogVerbose($"Found {definedTypes.Count} defined types");
+		foreach (ReferenceLocation refLocation in await FindReferencesAsync(definedTypes, searchInFiles))
 		{
-			Document doc = item.Document;
-			TextSpan span = item.Location.SourceSpan;
+			Document doc = refLocation.Document;
+			TextSpan span = refLocation.Location.SourceSpan;
 			SourceText sourceText = await doc.GetTextAsync();
 			LinePositionSpan linePositionSpan = sourceText.Lines.GetLinePositionSpan(span);
 			usages.Add(new SemanticUsage

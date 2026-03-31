@@ -47,30 +47,30 @@ public sealed class ApiRegistry
 			apiRegistry._apisByFullName[apiEntry.FullName] = apiEntry;
 			foreach (string tag in apiEntry.Tags)
 			{
-				if (!apiRegistry._apisByTag.TryGetValue(tag, out List<ApiEntry> value))
+				if (!apiRegistry._apisByTag.TryGetValue(tag, out List<ApiEntry> tagApis))
 				{
-					value = new List<ApiEntry>();
-					apiRegistry._apisByTag[tag] = value;
+					tagApis = new List<ApiEntry>();
+					apiRegistry._apisByTag[tag] = tagApis;
 				}
-				value.Add(apiEntry);
+				tagApis.Add(apiEntry);
 			}
-			foreach (string value4 in apiEntry.Values)
+			foreach (string valueName in apiEntry.Values)
 			{
-				if (!apiRegistry._apisByValue.TryGetValue(value4, out List<ApiEntry> value2))
+				if (!apiRegistry._apisByValue.TryGetValue(valueName, out List<ApiEntry> valueApis))
 				{
-					value2 = new List<ApiEntry>();
-					apiRegistry._apisByValue[value4] = value2;
+					valueApis = new List<ApiEntry>();
+					apiRegistry._apisByValue[valueName] = valueApis;
 				}
-				value2.Add(apiEntry);
+				valueApis.Add(apiEntry);
 			}
 			foreach (string behaviour in apiEntry.Behaviours)
 			{
-				if (!apiRegistry._apisByBehaviour.TryGetValue(behaviour, out List<ApiEntry> value3))
+				if (!apiRegistry._apisByBehaviour.TryGetValue(behaviour, out List<ApiEntry> behaviourApis))
 				{
-					value3 = new List<ApiEntry>();
-					apiRegistry._apisByBehaviour[behaviour] = value3;
+					behaviourApis = new List<ApiEntry>();
+					apiRegistry._apisByBehaviour[behaviour] = behaviourApis;
 				}
-				value3.Add(apiEntry);
+				behaviourApis.Add(apiEntry);
 			}
 		}
 		return apiRegistry;
@@ -88,29 +88,29 @@ public sealed class ApiRegistry
 
 	public IReadOnlyList<ApiEntry> GetApisWithTag(string tagName)
 	{
-		if (!_apisByTag.TryGetValue(tagName, out List<ApiEntry> value))
+		if (!_apisByTag.TryGetValue(tagName, out List<ApiEntry> tagApis))
 		{
 			return new List<ApiEntry>();
 		}
-		return value;
+		return tagApis;
 	}
 
 	public IReadOnlyList<ApiEntry> GetApisWithValue(string valueName)
 	{
-		if (!_apisByValue.TryGetValue(valueName, out List<ApiEntry> value))
+		if (!_apisByValue.TryGetValue(valueName, out List<ApiEntry> valueApis))
 		{
 			return new List<ApiEntry>();
 		}
-		return value;
+		return valueApis;
 	}
 
 	public IReadOnlyList<ApiEntry> GetApisWithBehaviour(string behaviourName)
 	{
-		if (!_apisByBehaviour.TryGetValue(behaviourName, out List<ApiEntry> value))
+		if (!_apisByBehaviour.TryGetValue(behaviourName, out List<ApiEntry> behaviourApis))
 		{
 			return new List<ApiEntry>();
 		}
-		return value;
+		return behaviourApis;
 	}
 
 	public List<ApiEntry> GetAccessibleApis(IEnumerable<string> usingNamespaces)
@@ -122,17 +122,17 @@ public sealed class ApiRegistry
 	public AmbiguityResult CheckAmbiguity(RenameType type, string symbolName, IEnumerable<string> accessibleNamespaces)
 	{
 		List<ApiEntry> accessibleApis = GetAccessibleApis(accessibleNamespaces);
-		List<ApiEntry> list = type switch
+		List<ApiEntry> matchingApis = type switch
 		{
-			RenameType.Tag => accessibleApis.Where((ApiEntry a) => a.Tags.Contains(symbolName)).ToList(), 
-			RenameType.Value => accessibleApis.Where((ApiEntry a) => a.Values.Contains(symbolName)).ToList(), 
-			RenameType.Behaviour => accessibleApis.Where((ApiEntry a) => a.Behaviours.Contains(symbolName)).ToList(), 
-			_ => new List<ApiEntry>(), 
+			RenameType.Tag => accessibleApis.Where((ApiEntry a) => a.Tags.Contains(symbolName)).ToList(),
+			RenameType.Value => accessibleApis.Where((ApiEntry a) => a.Values.Contains(symbolName)).ToList(),
+			RenameType.Behaviour => accessibleApis.Where((ApiEntry a) => a.Behaviours.Contains(symbolName)).ToList(),
+			_ => new List<ApiEntry>(),
 		};
 		return new AmbiguityResult
 		{
-			IsAmbiguous = (list.Count > 1),
-			MatchingApis = list
+			IsAmbiguous = (matchingApis.Count > 1),
+			MatchingApis = matchingApis
 		};
 	}
 
@@ -146,23 +146,23 @@ public sealed class ApiRegistry
 				HasConflict = false
 			};
 		}
-		List<string> list = new List<string>();
+		List<string> conflicts = new List<string>();
 		if (byClassName.Tags.Contains(newName))
 		{
-			list.Add("Tag '" + newName + "' already exists in " + apiClassName);
+			conflicts.Add("Tag '" + newName + "' already exists in " + apiClassName);
 		}
 		if (byClassName.Values.Contains(newName))
 		{
-			list.Add("Value '" + newName + "' already exists in " + apiClassName);
+			conflicts.Add("Value '" + newName + "' already exists in " + apiClassName);
 		}
 		if (byClassName.Behaviours.Contains(newName))
 		{
-			list.Add("Behaviour '" + newName + "' already exists in " + apiClassName);
+			conflicts.Add("Behaviour '" + newName + "' already exists in " + apiClassName);
 		}
 		return new ConflictResult
 		{
-			HasConflict = (list.Count > 0),
-			Conflicts = list
+			HasConflict = (conflicts.Count > 0),
+			Conflicts = conflicts
 		};
 	}
 }

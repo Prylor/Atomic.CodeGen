@@ -66,49 +66,49 @@ public class EntityDomainDefinition
 
 	public string[] Validate()
 	{
-		List<string> list = new List<string>();
+		List<string> errors = new List<string>();
 		if (string.IsNullOrWhiteSpace(EntityName))
 		{
-			list.Add("EntityName is required");
+			errors.Add("EntityName is required");
 		}
 		if (string.IsNullOrWhiteSpace(Namespace))
 		{
-			list.Add("Namespace is required");
+			errors.Add("Namespace is required");
 		}
 		if (string.IsNullOrWhiteSpace(Directory))
 		{
-			list.Add("Directory is required");
+			errors.Add("Directory is required");
 		}
 		if (IsPureEntityMode())
 		{
 			if (GenerateProxy)
 			{
-				list.Add("GenerateProxy is only supported for SceneEntity modes");
+				errors.Add("GenerateProxy is only supported for SceneEntity modes");
 			}
 			if (GenerateWorld)
 			{
-				list.Add("GenerateWorld is only supported for SceneEntity modes");
+				errors.Add("GenerateWorld is only supported for SceneEntity modes");
 			}
 			if (Pools != EntityPoolMode.None)
 			{
-				list.Add("Pools are only supported for SceneEntity modes");
+				errors.Add("Pools are only supported for SceneEntity modes");
 			}
 		}
 		if (IsSceneEntityMode())
 		{
 			if (Factories != EntityFactoryMode.None)
 			{
-				list.Add("Factories are only supported for pure Entity modes");
+				errors.Add("Factories are only supported for pure Entity modes");
 			}
 			if (Bakers != EntityBakerMode.None)
 			{
-				list.Add("Bakers are only supported for pure Entity modes");
+				errors.Add("Bakers are only supported for pure Entity modes");
 			}
 			if (Views != EntityViewMode.None)
 			{
-				list.Add("Views are only supported for pure Entity modes");
+				errors.Add("Views are only supported for pure Entity modes");
 			}
 		}
-		return list.ToArray();
+		return errors.ToArray();
 	}
 }

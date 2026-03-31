@@ -10,29 +10,29 @@ public static class ProjectDetector
 {
 	public static List<string> FindProjectsForFile(string sourceFilePath, string projectRoot)
 	{
-		List<string> list = new List<string>();
-		string[] files = Directory.GetFiles(projectRoot, "*.csproj", SearchOption.TopDirectoryOnly);
-		string[] array = files;
-		foreach (string text in array)
+		List<string> matchingProjects = new List<string>();
+		string[] csprojFiles = Directory.GetFiles(projectRoot, "*.csproj", SearchOption.TopDirectoryOnly);
+		string[] array = csprojFiles;
+		foreach (string csprojPath in array)
 		{
-			if (ContainsFileExplicitly(text, sourceFilePath, projectRoot))
+			if (ContainsFileExplicitly(csprojPath, sourceFilePath, projectRoot))
 			{
-				list.Add(Path.GetRelativePath(projectRoot, text));
+				matchingProjects.Add(Path.GetRelativePath(projectRoot, csprojPath));
 			}
 		}
-		if (list.Count > 0)
+		if (matchingProjects.Count > 0)
 		{
-			return list;
+			return matchingProjects;
 		}
-		array = files;
-		foreach (string text2 in array)
+		array = csprojFiles;
+		foreach (string csprojPath2 in array)
 		{
-			if (ContainsFileImplicitly(text2, sourceFilePath, projectRoot))
+			if (ContainsFileImplicitly(csprojPath2, sourceFilePath, projectRoot))
 			{
-				list.Add(Path.GetRelativePath(projectRoot, text2));
+				matchingProjects.Add(Path.GetRelativePath(projectRoot, csprojPath2));
 			}
 		}
-		return list;
+		return matchingProjects;
 	}
 
 	private static bool ContainsFileExplicitly(string csprojPath, string sourceFilePath, string projectRoot)
@@ -45,13 +45,13 @@ public static class ProjectDetector
 				return false;
 			}
 			string path = Path.GetDirectoryName(csprojPath) ?? projectRoot;
-			foreach (string item in (from e in root.Descendants()
+			foreach (string compilePath in (from e in root.Descendants()
 				where e.Name.LocalName == "Compile"
-				select e.Attribute("Include")?.Value into text
-				where text != null
-				select text).ToList())
+				select e.Attribute("Include")?.Value into includePath
+				where includePath != null
+				select includePath).ToList())
 			{
-				string fullPath = Path.GetFullPath(Path.Combine(path, item));
+				string fullPath = Path.GetFullPath(Path.Combine(path, compilePath));
 				string fullPath2 = Path.GetFullPath(sourceFilePath);
 				if (string.Equals(fullPath, fullPath2, StringComparison.OrdinalIgnoreCase))
 				{

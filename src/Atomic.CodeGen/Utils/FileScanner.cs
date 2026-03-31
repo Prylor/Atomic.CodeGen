@@ -45,8 +45,8 @@ public sealed class FileScanner
 			Logger.LogVerbose("Exclude pattern: " + excludePattern);
 		}
 		DirectoryInfoWrapper directoryInfo = new DirectoryInfoWrapper(new DirectoryInfo(projectRoot));
-		List<string> list = matcher.Execute(directoryInfo).Files.Select((FilePatternMatch f) => Path.Combine(projectRoot, f.Path)).Where(File.Exists).ToList();
-		Logger.LogVerbose($"Found {list.Count} files matching patterns");
-		return list;
+		List<string> matchedFiles = matcher.Execute(directoryInfo).Files.Select((FilePatternMatch f) => Path.Combine(projectRoot, f.Path)).Where(File.Exists).ToList();
+		Logger.LogVerbose($"Found {matchedFiles.Count} files matching patterns");
+		return matchedFiles;
 	}
 }

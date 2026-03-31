@@ -19,8 +19,8 @@ public static class ScanDomainsCommand
 	{
 		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, "Project root directory (defaults to current directory)");
 		Option<bool> option2 = new Option<bool>(new string[2] { "--generate", "-g" }, () => false, "Generate files (default is scan only)");
-		Command obj = new Command("scan-domains", "Scan for IEntityDomain implementations") { option, option2 };
-		obj.SetHandler(async delegate(string? projectPath, bool generate)
+		Command command = new Command("scan-domains", "Scan for IEntityDomain implementations") { option, option2 };
+		command.SetHandler(async delegate(string? projectPath, bool generate)
 		{
 			Logger.LogHeader("Atomic CodeGen - Entity Domain Scanner");
 			if (projectPath == null)
@@ -28,13 +28,13 @@ public static class ScanDomainsCommand
 				projectPath = Environment.CurrentDirectory;
 			}
 			CodeGenConfig config = await ConfigLoader.LoadAsync(projectPath);
-			string text = FindSolutionFile(projectPath);
+			string solutionPath = FindSolutionFile(projectPath);
 			Dictionary<string, EntityDomainDefinition> definitions;
-			if (text != null)
+			if (solutionPath != null)
 			{
 				Logger.LogInfo("Using Roslyn semantic analysis...");
 				Logger.LogInfo("");
-				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(text, config.AnalyzerMode, config.IncludedProjects);
+				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath, config.AnalyzerMode, config.IncludedProjects);
 				definitions = await discovery.DiscoverDomainsAsync(config.ExcludePaths);
 			}
 			else
@@ -100,56 +100,56 @@ public static class ScanDomainsCommand
 				}
 			}
 		}, option, option2);
-		return obj;
+		return command;
 	}
 
 	private static Markup BuildDomainInfo(EntityDomainDefinition definition, CodeGenConfig config)
 	{
-		List<string> list = new List<string>
+		List<string> infoLines = new List<string>
 		{
 			"[dim]Class:[/] " + Markup.Escape(definition.ClassName),
 			"[dim]Namespace:[/] " + Markup.Escape(definition.Namespace),
 			"[dim]Directory:[/] " + Markup.Escape(definition.Directory),
 			$"[dim]Mode:[/] [yellow]{definition.Mode}[/]"
 		};
-		List<string> list2 = new List<string>();
+		List<string> features = new List<string>();
 		if (definition.GenerateProxy)
 		{
-			list2.Add("Proxy");
+			features.Add("Proxy");
 		}
 		if (definition.GenerateWorld)
 		{
-			list2.Add("World");
+			features.Add("World");
 		}
 		if (definition.Installers != EntityInstallerMode.None)
 		{
-			list2.Add($"Installers({definition.Installers})");
+			features.Add($"Installers({definition.Installers})");
 		}
 		if (definition.Aspects != EntityAspectMode.None)
 		{
-			list2.Add($"Aspects({definition.Aspects})");
+			features.Add($"Aspects({definition.Aspects})");
 		}
 		if (definition.Pools != EntityPoolMode.None)
 		{
-			list2.Add($"Pools({definition.Pools})");
+			features.Add($"Pools({definition.Pools})");
 		}
 		if (definition.Factories != EntityFactoryMode.None)
 		{
-			list2.Add($"Factories({definition.Factories})");
+			features.Add($"Factories({definition.Factories})");
 		}
 		if (definition.Bakers != EntityBakerMode.None)
 		{
-			list2.Add($"Bakers({definition.Bakers})");
+			features.Add($"Bakers({definition.Bakers})");
 		}
 		if (definition.Views != EntityViewMode.None)
 		{
-			list2.Add($"Views({definition.Views})");
+			features.Add($"Views({definition.Views})");
 		}
-		if (list2.Count > 0)
+		if (features.Count > 0)
 		{
-			list.Add("[dim]Features:[/] [green]" + string.Join(", ", list2) + "[/]");
+			infoLines.Add("[dim]Features:[/] [green]" + string.Join(", ", features) + "[/]");
 		}
-		return new Markup(string.Join("\n", list));
+		return new Markup(string.Join("\n", infoLines));
 	}
 
 	private static string? FindSolutionFile(string projectPath)

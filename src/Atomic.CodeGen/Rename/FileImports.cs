@@ -40,24 +40,24 @@ public sealed class FileImports
 		{
 			return true;
 		}
-		int num = fullTypeName.LastIndexOf('.');
-		if (num < 0)
+		int lastDotIndex = fullTypeName.LastIndexOf('.');
+		if (lastDotIndex < 0)
 		{
 			return typeReference.Equals(fullTypeName, StringComparison.OrdinalIgnoreCase);
 		}
-		string ns = fullTypeName.Substring(0, num);
-		string value = fullTypeName.Substring(num + 1);
-		if (typeReference.Equals(value, StringComparison.OrdinalIgnoreCase) && HasNamespaceImport(ns))
+		string ns = fullTypeName.Substring(0, lastDotIndex);
+		string shortName = fullTypeName.Substring(lastDotIndex + 1);
+		if (typeReference.Equals(shortName, StringComparison.OrdinalIgnoreCase) && HasNamespaceImport(ns))
 		{
 			return true;
 		}
-		int num2 = typeReference.IndexOf('.');
-		if (num2 > 0)
+		int dotIndex = typeReference.IndexOf('.');
+		if (dotIndex > 0)
 		{
-			string alias = typeReference.Substring(0, num2);
-			string text = typeReference.Substring(num2 + 1);
-			string text2 = ResolveAlias(alias);
-			if (text2 != null && (text2 + "." + text).Equals(fullTypeName, StringComparison.OrdinalIgnoreCase))
+			string alias = typeReference.Substring(0, dotIndex);
+			string remainder = typeReference.Substring(dotIndex + 1);
+			string resolvedNamespace = ResolveAlias(alias);
+			if (resolvedNamespace != null && (resolvedNamespace + "." + remainder).Equals(fullTypeName, StringComparison.OrdinalIgnoreCase))
 			{
 				return true;
 			}

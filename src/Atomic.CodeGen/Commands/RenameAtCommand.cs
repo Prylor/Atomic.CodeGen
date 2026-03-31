@@ -50,8 +50,8 @@ public static class RenameAtCommand
 		Option<bool> option6 = new Option<bool>(new string[2] { "--dry-run", "-d" }, () => false, "Preview changes without applying them");
 		Option<bool> option7 = new Option<bool>(new string[2] { "--verbose", "-v" }, () => false, "Enable verbose logging");
 		Option<bool> option8 = new Option<bool>(new string[1] { "--json" }, () => false, "Output results as JSON (for IDE integration)");
-		Command obj = new Command("rename-at", "Rename symbol at cursor position (for IDE integration)") { option, option2, option3, option4, option5, option6, option7, option8 };
-		obj.SetHandler(async delegate(string projectPath, string file, int line, int column, string to, bool dryRun, bool verbose, bool json)
+		Command command = new Command("rename-at", "Rename symbol at cursor position (for IDE integration)") { option, option2, option3, option4, option5, option6, option7, option8 };
+		command.SetHandler(async delegate(string projectPath, string file, int line, int column, string to, bool dryRun, bool verbose, bool json)
 		{
 			Logger.SetVerbose(verbose);
 			if (!json)
@@ -116,7 +116,7 @@ public static class RenameAtCommand
 				}
 			}
 		}, option, option2, option3, option4, option5, option6, option7, option8);
-		return obj;
+		return command;
 	}
 
 	private static async Task<SymbolInfo?> LocateSymbolAsync(string filePath, int line, int column)
@@ -124,14 +124,14 @@ public static class RenameAtCommand
 		string sourceCode = await File.ReadAllTextAsync(filePath);
 		CSharpParseOptions options = CreateParseOptionsWithSymbols(sourceCode);
 		SyntaxNode syntaxNode = await CSharpSyntaxTree.ParseText(sourceCode, options).GetRootAsync();
-		string[] array = sourceCode.Split('\n');
-		int num = 0;
-		for (int i = 0; i < line - 1 && i < array.Length; i++)
+		string[] sourceLines = sourceCode.Split('\n');
+		int absoluteOffset = 0;
+		for (int i = 0; i < line - 1 && i < sourceLines.Length; i++)
 		{
-			num += array[i].Length + 1;
+			absoluteOffset += sourceLines[i].Length + 1;
 		}
-		num += column - 1;
-		SyntaxToken syntaxToken = syntaxNode.FindToken(num);
+		absoluteOffset += column - 1;
+		SyntaxToken syntaxToken = syntaxNode.FindToken(absoluteOffset);
 		if (syntaxToken == default(SyntaxToken))
 		{
 			return null;
@@ -163,13 +163,13 @@ public static class RenameAtCommand
 					ClassDeclarationSyntax classDeclarationSyntax3 = FindOwnerClass(classDeclarationSyntax2);
 					if (classDeclarationSyntax3 != null)
 					{
-						string text = fieldDeclarationSyntax.Declaration.Variables.FirstOrDefault()?.Identifier.Text;
-						if (text != null)
+						string fieldName = fieldDeclarationSyntax.Declaration.Variables.FirstOrDefault()?.Identifier.Text;
+						if (fieldName != null)
 						{
 							return new SymbolInfo
 							{
 								Type = RenameType.Value,
-								Name = text,
+								Name = fieldName,
 								OwnerName = classDeclarationSyntax3.Identifier.Text
 							};
 						}
@@ -178,14 +178,14 @@ public static class RenameAtCommand
 			}
 			if (parent is ClassDeclarationSyntax classDeclarationSyntax4 && classDeclarationSyntax4.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).Any((AttributeSyntax a) => a.Name.ToString().Contains("LinkTo")))
 			{
-				string text2 = ExtractApiNameFromLinkTo(classDeclarationSyntax4.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).FirstOrDefault((AttributeSyntax a) => a.Name.ToString().Contains("LinkTo")));
-				if (text2 != null)
+				string linkedApiName = ExtractApiNameFromLinkTo(classDeclarationSyntax4.AttributeLists.SelectMany((AttributeListSyntax al) => al.Attributes).FirstOrDefault((AttributeSyntax a) => a.Name.ToString().Contains("LinkTo")));
+				if (linkedApiName != null)
 				{
 					return new SymbolInfo
 					{
 						Type = RenameType.Behaviour,
 						Name = classDeclarationSyntax4.Identifier.Text,
-						OwnerName = text2
+						OwnerName = linkedApiName
 					};
 				}
 			}
@@ -203,23 +203,23 @@ public static class RenameAtCommand
 				string methodName = GetMethodName(invocation);
 				if (methodName != null)
 				{
-					string[] array2 = new string[7] { "Get", "Set", "Has", "Del", "Add", "TryGet", "Ref" };
-					foreach (string text3 in array2)
+					string[] valuePrefixes = new string[7] { "Get", "Set", "Has", "Del", "Add", "TryGet", "Ref" };
+					foreach (string prefix in valuePrefixes)
 					{
-						if (methodName.StartsWith(text3) && methodName.Length > text3.Length)
+						if (methodName.StartsWith(prefix) && methodName.Length > prefix.Length)
 						{
-							methodName.Substring(text3.Length);
+							methodName.Substring(prefix.Length);
 							break;
 						}
 					}
 					if (methodName.EndsWith("Tag"))
 					{
-						array2 = new string[3] { "Has", "Add", "Del" };
-						foreach (string text4 in array2)
+						string[] tagPrefixes = new string[3] { "Has", "Add", "Del" };
+						foreach (string prefix in tagPrefixes)
 						{
-							if (methodName.StartsWith(text4) && methodName.EndsWith("Tag"))
+							if (methodName.StartsWith(prefix) && methodName.EndsWith("Tag"))
 							{
-								methodName.Substring(text4.Length, methodName.Length - text4.Length - 3);
+								methodName.Substring(prefix.Length, methodName.Length - prefix.Length - 3);
 								break;
 							}
 						}
@@ -281,8 +281,8 @@ public static class RenameAtCommand
 	{
 		if (json)
 		{
-			string text = string.Join(", ", errors.Select((string e) => "\"" + EscapeJson(e) + "\""));
-			Console.WriteLine("{\"success\": false, \"errors\": [" + text + "]}");
+			string errorsJson = string.Join(", ", errors.Select((string e) => "\"" + EscapeJson(e) + "\""));
+			Console.WriteLine("{\"success\": false, \"errors\": [" + errorsJson + "]}");
 			return;
 		}
 		foreach (string error in errors)
@@ -311,15 +311,15 @@ public static class RenameAtCommand
 
 	private static CSharpParseOptions CreateParseOptionsWithSymbols(string sourceCode)
 	{
-		HashSet<string> hashSet = new HashSet<string>();
-		foreach (Match item in PreprocessorSymbolRegex.Matches(sourceCode))
+		HashSet<string> preprocessorSymbols = new HashSet<string>();
+		foreach (Match match in PreprocessorSymbolRegex.Matches(sourceCode))
 		{
-			string value = item.Groups[2].Value;
-			if (!string.IsNullOrEmpty(value))
+			string symbolName = match.Groups[2].Value;
+			if (!string.IsNullOrEmpty(symbolName))
 			{
-				hashSet.Add(value);
+				preprocessorSymbols.Add(symbolName);
 			}
 		}
-		return new CSharpParseOptions(LanguageVersion.Default, DocumentationMode.Parse, SourceCodeKind.Regular, hashSet);
+		return new CSharpParseOptions(LanguageVersion.Default, DocumentationMode.Parse, SourceCodeKind.Regular, preprocessorSymbols);
 	}
 }

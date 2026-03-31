@@ -35,12 +35,12 @@ public static class EntityBehaviourGenerator
 		sb.AppendLine();
 		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();
@@ -48,16 +48,16 @@ public static class EntityBehaviourGenerator
 		sb.AppendLine("{");
 		for (int j = 0; j < BaseInterfaces.Length; j++)
 		{
-			string value = string.Format(Summaries[j], definition.EntityName);
-			string text3 = string.Format(Remarks[j], definition.EntityName);
+			string summary = string.Format(Summaries[j], definition.EntityName);
+			string remarks = string.Format(Remarks[j], definition.EntityName);
 			sb.AppendLine("    /// <summary>");
-			sb.AppendLine($"    /// {value}");
+			sb.AppendLine($"    /// {summary}");
 			sb.AppendLine("    /// </summary>");
 			sb.AppendLine("    /// <remarks>");
-			imports = text3.Split('\n');
-			foreach (string value2 in imports)
+			imports = remarks.Split('\n');
+			foreach (string remarkLine in imports)
 			{
-				sb.AppendLine($"    /// {value2}");
+				sb.AppendLine($"    /// {remarkLine}");
 			}
 			sb.AppendLine("    /// </remarks>");
 			sb.AppendLine($"    public interface {definition.EntityName}{EventNames[j]} : {BaseInterfaces[j]}<{definition.EntityName}>");

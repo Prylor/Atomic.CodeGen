@@ -19,16 +19,16 @@ public sealed class RenameOperation
 	public static RenameOperation FromUsageMatch(UsageMatch match, string fileContent)
 	{
 		string[] array = fileContent.Split('\n');
-		int num = 0;
+		int charOffset = 0;
 		for (int i = 0; i < match.Line - 1 && i < array.Length; i++)
 		{
-			num += array[i].Length + 1;
+			charOffset += array[i].Length + 1;
 		}
-		num += match.Column - 1;
+		charOffset += match.Column - 1;
 		return new RenameOperation
 		{
 			FilePath = match.FilePath,
-			StartOffset = num,
+			StartOffset = charOffset,
 			Length = match.Length,
 			OldText = match.MatchedText,
 			NewText = match.ReplacementText,

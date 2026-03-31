@@ -86,14 +86,14 @@ public sealed class RenameExecutor
 			if (File.Exists(affectedFile))
 			{
 				string relativePath = GetRelativePath(affectedFile);
-				string text = Path.Combine(_backupDirectory, relativePath);
-				string directoryName = Path.GetDirectoryName(text);
+				string backupFilePath = Path.Combine(_backupDirectory, relativePath);
+				string directoryName = Path.GetDirectoryName(backupFilePath);
 				if (!string.IsNullOrEmpty(directoryName))
 				{
 					Directory.CreateDirectory(directoryName);
 				}
-				File.Copy(affectedFile, text, overwrite: true);
-				_backupPaths[affectedFile] = text;
+				File.Copy(affectedFile, backupFilePath, overwrite: true);
+				_backupPaths[affectedFile] = backupFilePath;
 			}
 		}
 		Logger.LogVerbose($"Created backup of {_backupPaths.Count} files");
@@ -106,87 +106,87 @@ public sealed class RenameExecutor
 		{
 			return;
 		}
-		List<DirectoryInfo> list = (from d in Directory.GetDirectories(path)
+		List<DirectoryInfo> allBackups = (from d in Directory.GetDirectories(path)
 			select new DirectoryInfo(d) into d
 			orderby d.CreationTime descending
 			select d).ToList();
-		if (list.Count <= cap)
+		if (allBackups.Count <= cap)
 		{
 			return;
 		}
-		List<DirectoryInfo> list2 = list.Skip(cap).ToList();
-		foreach (DirectoryInfo item in list2)
+		List<DirectoryInfo> backupsToDelete = allBackups.Skip(cap).ToList();
+		foreach (DirectoryInfo backupDir in backupsToDelete)
 		{
 			try
 			{
-				item.Delete(recursive: true);
-				Logger.LogVerbose("Deleted old backup: " + item.Name);
+				backupDir.Delete(recursive: true);
+				Logger.LogVerbose("Deleted old backup: " + backupDir.Name);
 			}
 			catch (Exception ex)
 			{
-				Logger.LogWarning("Failed to delete old backup " + item.Name + ": " + ex.Message);
+				Logger.LogWarning("Failed to delete old backup " + backupDir.Name + ": " + ex.Message);
 			}
 		}
-		if (list2.Count > 0)
+		if (backupsToDelete.Count > 0)
 		{
-			Logger.LogInfo($"Cleaned up {list2.Count} old backup(s), keeping {cap} most recent");
+			Logger.LogInfo($"Cleaned up {backupsToDelete.Count} old backup(s), keeping {cap} most recent");
 		}
 	}
 
 	private void ApplyOperationsToFile(string filePath, List<RenameOperation> operations)
 	{
-		string text = File.ReadAllText(filePath);
+		string fileContent = File.ReadAllText(filePath);
 		foreach (RenameOperation operation in operations)
 		{
-			if (operation.StartOffset < 0 || operation.StartOffset + operation.Length > text.Length)
+			if (operation.StartOffset < 0 || operation.StartOffset + operation.Length > fileContent.Length)
 			{
 				Logger.LogWarning($"Invalid offset in {filePath} at {operation.Line}:{operation.Column}, skipping");
 			}
 			else
 			{
-				text = text.Substring(0, operation.StartOffset) + operation.NewText + text.Substring(operation.StartOffset + operation.Length);
+				fileContent = fileContent.Substring(0, operation.StartOffset) + operation.NewText + fileContent.Substring(operation.StartOffset + operation.Length);
 			}
 		}
-		File.WriteAllText(filePath, text);
+		File.WriteAllText(filePath, fileContent);
 		Logger.LogVerbose($"Modified: {GetRelativePath(filePath)} ({operations.Count} changes)");
 	}
 
 	private void RenameSourceFile(RenameContext context)
 	{
 		string sourceFilePath = context.SourceFilePath;
-		string text = Path.Combine(Path.GetDirectoryName(sourceFilePath) ?? string.Empty, context.NewName + Path.GetExtension(sourceFilePath));
-		if (File.Exists(text))
+		string newFilePath = Path.Combine(Path.GetDirectoryName(sourceFilePath) ?? string.Empty, context.NewName + Path.GetExtension(sourceFilePath));
+		if (File.Exists(newFilePath))
 		{
-			throw new InvalidOperationException("Cannot rename file: " + text + " already exists");
+			throw new InvalidOperationException("Cannot rename file: " + newFilePath + " already exists");
 		}
-		File.Move(sourceFilePath, text);
-		Logger.LogVerbose("Renamed file: " + GetRelativePath(sourceFilePath) + " -> " + Path.GetFileName(text));
-		string text2 = sourceFilePath + ".meta";
-		string text3 = text + ".meta";
-		if (File.Exists(text2))
+		File.Move(sourceFilePath, newFilePath);
+		Logger.LogVerbose("Renamed file: " + GetRelativePath(sourceFilePath) + " -> " + Path.GetFileName(newFilePath));
+		string oldMetaPath = sourceFilePath + ".meta";
+		string newMetaPath = newFilePath + ".meta";
+		if (File.Exists(oldMetaPath))
 		{
-			File.Move(text2, text3);
-			Logger.LogVerbose("Renamed meta file: " + Path.GetFileName(text2) + " -> " + Path.GetFileName(text3));
+			File.Move(oldMetaPath, newMetaPath);
+			Logger.LogVerbose("Renamed meta file: " + Path.GetFileName(oldMetaPath) + " -> " + Path.GetFileName(newMetaPath));
 		}
-		UpdateCsprojReferences(sourceFilePath, text);
+		UpdateCsprojReferences(sourceFilePath, newFilePath);
 	}
 
 	private void UpdateCsprojReferences(string oldPath, string newPath)
 	{
 		string[] files = Directory.GetFiles(_projectRoot, "*.csproj", SearchOption.AllDirectories);
-		string text = GetRelativePath(oldPath).Replace('/', '\\');
-		string text2 = GetRelativePath(newPath).Replace('/', '\\');
+		string oldRelativePath = GetRelativePath(oldPath).Replace('/', '\\');
+		string newRelativePath = GetRelativePath(newPath).Replace('/', '\\');
 		string[] array = files;
-		foreach (string path in array)
+		foreach (string csprojPath in array)
 		{
-			string text3 = File.ReadAllText(path);
-			if (text3.Contains(text) || text3.Contains(text.Replace('\\', '/')))
+			string csprojContent = File.ReadAllText(csprojPath);
+			if (csprojContent.Contains(oldRelativePath) || csprojContent.Contains(oldRelativePath.Replace('\\', '/')))
 			{
-				string text4 = text3.Replace(text, text2).Replace(text.Replace('\\', '/'), text2.Replace('\\', '/'));
-				if (text4 != text3)
+				string updatedContent = csprojContent.Replace(oldRelativePath, newRelativePath).Replace(oldRelativePath.Replace('\\', '/'), newRelativePath.Replace('\\', '/'));
+				if (updatedContent != csprojContent)
 				{
-					File.WriteAllText(path, text4);
-					Logger.LogVerbose("Updated csproj: " + Path.GetFileName(path));
+					File.WriteAllText(csprojPath, updatedContent);
+					Logger.LogVerbose("Updated csproj: " + Path.GetFileName(csprojPath));
 				}
 			}
 		}
@@ -194,39 +194,39 @@ public sealed class RenameExecutor
 
 	private void RenameGeneratedFiles(RenameContext context)
 	{
-		foreach (var (text, text2) in context.FileRenames)
+		foreach (var (oldFilePath, newFilePath) in context.FileRenames)
 		{
-			if (!File.Exists(text))
+			if (!File.Exists(oldFilePath))
 			{
-				Logger.LogWarning("File not found for rename: " + GetRelativePath(text));
+				Logger.LogWarning("File not found for rename: " + GetRelativePath(oldFilePath));
 				continue;
 			}
-			if (File.Exists(text2))
+			if (File.Exists(newFilePath))
 			{
-				Logger.LogWarning("Cannot rename file, target already exists: " + GetRelativePath(text2));
+				Logger.LogWarning("Cannot rename file, target already exists: " + GetRelativePath(newFilePath));
 				continue;
 			}
-			File.Move(text, text2);
-			Logger.LogVerbose("Renamed file: " + Path.GetFileName(text) + " -> " + Path.GetFileName(text2));
-			string text3 = text + ".meta";
-			string text4 = text2 + ".meta";
-			if (File.Exists(text3))
+			File.Move(oldFilePath, newFilePath);
+			Logger.LogVerbose("Renamed file: " + Path.GetFileName(oldFilePath) + " -> " + Path.GetFileName(newFilePath));
+			string oldMetaPath = oldFilePath + ".meta";
+			string newMetaPath = newFilePath + ".meta";
+			if (File.Exists(oldMetaPath))
 			{
-				File.Move(text3, text4);
-				Logger.LogVerbose("Renamed meta file: " + Path.GetFileName(text3) + " -> " + Path.GetFileName(text4));
+				File.Move(oldMetaPath, newMetaPath);
+				Logger.LogVerbose("Renamed meta file: " + Path.GetFileName(oldMetaPath) + " -> " + Path.GetFileName(newMetaPath));
 			}
-			UpdateCsprojReferences(text, text2);
+			UpdateCsprojReferences(oldFilePath, newFilePath);
 		}
 		Logger.LogInfo($"Renamed {context.FileRenames.Count} generated file(s)");
 	}
 
 	private void Rollback()
 	{
-		foreach (var (destFileName, text3) in _backupPaths)
+		foreach (var (originalPath, backupPath) in _backupPaths)
 		{
-			if (File.Exists(text3))
+			if (File.Exists(backupPath))
 			{
-				File.Copy(text3, destFileName, overwrite: true);
+				File.Copy(backupPath, originalPath, overwrite: true);
 			}
 		}
 	}
@@ -251,18 +251,18 @@ public sealed class RenameExecutor
 
 	public static List<FileChangeSummary> GetPreview(RenameContext context)
 	{
-		List<FileChangeSummary> list = new List<FileChangeSummary>();
-		foreach (var (filePath, list3) in context.UsagesByFile)
+		List<FileChangeSummary> summaries = new List<FileChangeSummary>();
+		foreach (var (filePath, fileUsages) in context.UsagesByFile)
 		{
-			list.Add(new FileChangeSummary
+			summaries.Add(new FileChangeSummary
 			{
 				FilePath = filePath,
-				ChangeCount = list3.Count,
-				AmbiguousCount = list3.Count((UsageMatch u) => u.IsAmbiguous),
-				Categories = list3.Select((UsageMatch u) => u.Category).Distinct().ToList(),
-				Usages = list3
+				ChangeCount = fileUsages.Count,
+				AmbiguousCount = fileUsages.Count((UsageMatch u) => u.IsAmbiguous),
+				Categories = fileUsages.Select((UsageMatch u) => u.Category).Distinct().ToList(),
+				Usages = fileUsages
 			});
 		}
-		return list.OrderBy((FileChangeSummary s) => s.FilePath).ToList();
+		return summaries.OrderBy((FileChangeSummary s) => s.FilePath).ToList();
 	}
 }

@@ -11,11 +11,11 @@ public static class EntityAspectGenerators
 {
 	public static async Task GenerateScriptableAspectAsync(EntityDomainDefinition definition, CodeGenConfig config, string outputDir)
 	{
-		bool flag = definition.Aspects.HasFlag(EntityAspectMode.ScriptableEntityAspect) && definition.Aspects.HasFlag(EntityAspectMode.SceneEntityAspect);
-		string text = (flag ? "Scriptable" : "");
-		string fileName = text + definition.EntityName + "Aspect.cs";
+		bool hasBothAspects = definition.Aspects.HasFlag(EntityAspectMode.ScriptableEntityAspect) && definition.Aspects.HasFlag(EntityAspectMode.SceneEntityAspect);
+		string prefix = (hasBothAspects ? "Scriptable" : "");
+		string fileName = prefix + definition.EntityName + "Aspect.cs";
 		string filePath = Path.Combine(outputDir, fileName);
-		string contents = GenerateAspectContent(definition, config, fileName, isScriptable: true, flag);
+		string contents = GenerateAspectContent(definition, config, fileName, isScriptable: true, hasBothAspects);
 		await File.WriteAllTextAsync(filePath, contents);
 		await EntityDomainFileHelper.GenerateMetaFileAsync(filePath);
 		await EntityDomainFileHelper.LinkToProjectsAsync(definition, config, filePath);
@@ -24,11 +24,11 @@ public static class EntityAspectGenerators
 
 	public static async Task GenerateSceneAspectAsync(EntityDomainDefinition definition, CodeGenConfig config, string outputDir)
 	{
-		bool flag = definition.Aspects.HasFlag(EntityAspectMode.ScriptableEntityAspect) && definition.Aspects.HasFlag(EntityAspectMode.SceneEntityAspect);
-		string text = (flag ? "Scene" : "");
-		string fileName = text + definition.EntityName + "Aspect.cs";
+		bool hasBothAspects = definition.Aspects.HasFlag(EntityAspectMode.ScriptableEntityAspect) && definition.Aspects.HasFlag(EntityAspectMode.SceneEntityAspect);
+		string prefix = (hasBothAspects ? "Scene" : "");
+		string fileName = prefix + definition.EntityName + "Aspect.cs";
 		string filePath = Path.Combine(outputDir, fileName);
-		string contents = GenerateAspectContent(definition, config, fileName, isScriptable: false, flag);
+		string contents = GenerateAspectContent(definition, config, fileName, isScriptable: false, hasBothAspects);
 		await File.WriteAllTextAsync(filePath, contents);
 		await EntityDomainFileHelper.GenerateMetaFileAsync(filePath);
 		await EntityDomainFileHelper.LinkToProjectsAsync(definition, config, filePath);
@@ -42,12 +42,12 @@ public static class EntityAspectGenerators
 		sb.AppendLine();
 		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();
@@ -72,9 +72,9 @@ public static class EntityAspectGenerators
 			sb.AppendLine("    /// In the Editor, it supports automatic refresh via <c>OnValidate</c>.");
 		}
 		sb.AppendLine("    /// </remarks>");
-		string value = ((!usePrefixes) ? "" : (isScriptable ? "Scriptable" : "Scene"));
-		string value2 = (isScriptable ? "ScriptableEntityAspect" : "SceneEntityAspect");
-		sb.AppendLine($"    public abstract class {value}{definition.EntityName}Aspect : {value2}<I{definition.EntityName}>");
+		string classPrefix = ((!usePrefixes) ? "" : (isScriptable ? "Scriptable" : "Scene"));
+		string baseClassName = (isScriptable ? "ScriptableEntityAspect" : "SceneEntityAspect");
+		sb.AppendLine($"    public abstract class {classPrefix}{definition.EntityName}Aspect : {baseClassName}<I{definition.EntityName}>");
 		sb.AppendLine("    {");
 		sb.AppendLine("    }");
 		sb.AppendLine("}");

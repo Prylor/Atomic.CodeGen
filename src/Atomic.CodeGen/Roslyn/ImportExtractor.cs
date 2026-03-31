@@ -10,19 +10,19 @@ public static class ImportExtractor
 {
 	public static List<string> Extract(CompilationUnitSyntax root, string[]? excludeImports = null)
 	{
-		List<string> list = new List<string>();
-		HashSet<string> hashSet = new HashSet<string>(excludeImports ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-		HashSet<string> hashSet2 = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Atomic.Entities", "System.Runtime.CompilerServices", "UnityEditor" };
+		List<string> imports = new List<string>();
+		HashSet<string> excludedNamespaces = new HashSet<string>(excludeImports ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+		HashSet<string> alwaysExcludedNamespaces = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Atomic.Entities", "System.Runtime.CompilerServices", "UnityEditor" };
 		SyntaxList<UsingDirectiveSyntax>.Enumerator enumerator = root.Usings.GetEnumerator();
 		while (enumerator.MoveNext())
 		{
 			UsingDirectiveSyntax current = enumerator.Current;
-			string text = current.Name?.ToString();
-			if (!string.IsNullOrWhiteSpace(text) && !hashSet.Contains(text) && !hashSet2.Contains(text) && current.Alias == null && !(current.StaticKeyword.Text == "static"))
+			string namespaceName = current.Name?.ToString();
+			if (!string.IsNullOrWhiteSpace(namespaceName) && !excludedNamespaces.Contains(namespaceName) && !alwaysExcludedNamespaces.Contains(namespaceName) && current.Alias == null && !(current.StaticKeyword.Text == "static"))
 			{
-				list.Add(text);
+				imports.Add(namespaceName);
 			}
 		}
-		return list.Distinct().ToList();
+		return imports.Distinct().ToList();
 	}
 }

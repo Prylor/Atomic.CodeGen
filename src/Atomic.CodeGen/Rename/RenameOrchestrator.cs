@@ -66,14 +66,14 @@ public sealed class RenameOrchestrator
 		Logger.LogInfo("Building API registry...");
 		List<EntityAPIDefinition> definitions = new List<EntityAPIDefinition>();
 		List<BehaviourDefinition> behaviours = new List<BehaviourDefinition>();
-		string text = FindSolutionFile(_projectRoot);
-		if (text != null)
+		string solutionFile = FindSolutionFile(_projectRoot);
+		if (solutionFile != null)
 		{
 			Logger.LogVerbose("Using Roslyn semantic analysis for API discovery...");
-			List<string> list = _config.ExcludePaths.ToList();
-			list.Add("**/.rename-backup/**");
-			using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(text, _config.AnalyzerMode, _config.IncludedProjects);
-			DiscoveryResult discoveryResult = await discovery.DiscoverAllAsync(list);
+			List<string> excludePaths = _config.ExcludePaths.ToList();
+			excludePaths.Add("**/.rename-backup/**");
+			using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionFile, _config.AnalyzerMode, _config.IncludedProjects);
+			DiscoveryResult discoveryResult = await discovery.DiscoverAllAsync(excludePaths);
 			definitions = discoveryResult.EntityApis.Where((EntityAPIDefinition d) => d.IsValid).ToList();
 			behaviours = discoveryResult.Behaviours;
 			_domains = discoveryResult.Domains.Values.Select((EntityDomainDefinition d) => new DomainEntry
@@ -88,29 +88,29 @@ public sealed class RenameOrchestrator
 		else
 		{
 			Logger.LogVerbose("No solution file found, using file scanning...");
-			List<string> list2 = new FileScanner(_config).Scan();
+			List<string> scannedFiles = new FileScanner(_config).Scan();
 			EntityAPIParser parser = new EntityAPIParser();
 			BehaviourParser behaviourParser = new BehaviourParser();
-			foreach (string item in list2)
+			foreach (string scannedFile in scannedFiles)
 			{
-				EntityAPIDefinition entityAPIDefinition = await parser.ParseFileAsync(item);
+				EntityAPIDefinition entityAPIDefinition = await parser.ParseFileAsync(scannedFile);
 				if (entityAPIDefinition != null)
 				{
 					definitions.Add(entityAPIDefinition);
 				}
 			}
-			List<string> list3 = (from p in _config.ScanPaths
+			List<string> scanBaseDirectories = (from p in _config.ScanPaths
 				select p.Split(new string[1] { "/**" }, StringSplitOptions.None)[0] into p
 				where !p.Contains("*")
 				select p).Distinct().ToList();
-			List<string> includePatterns = ((list3.Count > 0) ? list3.Select((string d) => d.TrimEnd('/', '\\') + "/**/*.cs").ToList() : new List<string> { "**/*.cs" });
-			List<string> list4 = _config.ExcludePaths.ToList();
-			list4.Add("**/.rename-backup/**");
-			List<string> list5 = FileScanner.FindFiles(_projectRoot, includePatterns, list4);
-			Logger.LogVerbose($"Scanning {list5.Count} files for behaviours...");
-			foreach (string item2 in list5)
+			List<string> includePatterns = ((scanBaseDirectories.Count > 0) ? scanBaseDirectories.Select((string d) => d.TrimEnd('/', '\\') + "/**/*.cs").ToList() : new List<string> { "**/*.cs" });
+			List<string> behaviourExcludePaths = _config.ExcludePaths.ToList();
+			behaviourExcludePaths.Add("**/.rename-backup/**");
+			List<string> behaviourFiles = FileScanner.FindFiles(_projectRoot, includePatterns, behaviourExcludePaths);
+			Logger.LogVerbose($"Scanning {behaviourFiles.Count} files for behaviours...");
+			foreach (string behaviourFile in behaviourFiles)
 			{
-				behaviours.AddRange(await behaviourParser.ParseFileAsync(item2));
+				behaviours.AddRange(await behaviourParser.ParseFileAsync(behaviourFile));
 			}
 		}
 		foreach (BehaviourDefinition behaviour in behaviours)
@@ -209,8 +209,8 @@ public sealed class RenameOrchestrator
 		{
 			return context;
 		}
-		List<UsageMatch> list = await TrySemanticAnalysisAsync(context);
-		if (list.Count > 0 || _lastSemanticAnalysisSucceeded)
+		List<UsageMatch> foundUsages = await TrySemanticAnalysisAsync(context);
+		if (foundUsages.Count > 0 || _lastSemanticAnalysisSucceeded)
 		{
 			context.UsedSemanticAnalysis = true;
 		}
@@ -218,9 +218,9 @@ public sealed class RenameOrchestrator
 		{
 			context.UsedSemanticAnalysis = false;
 			List<string> allCsFiles = GetAllCsFiles();
-			list = await FallbackToSyntacticAnalysisAsync(context, allCsFiles);
+			foundUsages = await FallbackToSyntacticAnalysisAsync(context, allCsFiles);
 		}
-		context.Usages = list;
+		context.Usages = foundUsages;
 		if (context.AmbiguousUsages.Count > 0)
 		{
 			context.Warnings.Add($"{context.AmbiguousUsages.Count} usages are ambiguous and require confirmation");
@@ -230,27 +230,27 @@ public sealed class RenameOrchestrator
 
 	private List<string> GetAllCsFiles()
 	{
-		List<string> list = (from p in _config.ScanPaths
+		List<string> scanBaseDirectories = (from p in _config.ScanPaths
 			select p.Split(new string[1] { "/**" }, StringSplitOptions.None)[0] into p
 			where !p.Contains("*")
 			select p).Distinct().ToList();
-		List<string> includePatterns = ((list.Count > 0) ? list.Select((string d) => d.TrimEnd('/', '\\') + "/**/*.cs").ToList() : new List<string> { "**/*.cs" });
+		List<string> includePatterns = ((scanBaseDirectories.Count > 0) ? scanBaseDirectories.Select((string d) => d.TrimEnd('/', '\\') + "/**/*.cs").ToList() : new List<string> { "**/*.cs" });
 		return FileScanner.FindFiles(_projectRoot, includePatterns, _config.ExcludePaths);
 	}
 
 	private async Task<List<UsageMatch>> TrySemanticAnalysisAsync(RenameContext context)
 	{
 		_lastSemanticAnalysisSucceeded = false;
-		string text = SemanticUsageFinder.FindSolutionFile(_projectRoot);
-		if (text == null)
+		string solutionPath = SemanticUsageFinder.FindSolutionFile(_projectRoot);
+		if (solutionPath == null)
 		{
 			Logger.LogVerbose("No solution file found, skipping semantic analysis");
 			return new List<UsageMatch>();
 		}
-		Logger.LogVerbose("Found solution: " + text);
+		Logger.LogVerbose("Found solution: " + solutionPath);
 		try
 		{
-			List<UsageMatch> result = await new SemanticUsageFinder(text, _config.AnalyzerMode, _config.IncludedProjects).FindUsagesAsync(context);
+			List<UsageMatch> result = await new SemanticUsageFinder(solutionPath, _config.AnalyzerMode, _config.IncludedProjects).FindUsagesAsync(context);
 			_lastSemanticAnalysisSucceeded = true;
 			return result;
 		}
@@ -265,21 +265,21 @@ public sealed class RenameOrchestrator
 	private async Task<List<UsageMatch>> FallbackToSyntacticAnalysisAsync(RenameContext context, List<string> allCsFiles)
 	{
 		ApiRegistry registry = await GetRegistryAsync();
-		if (!_finders.TryGetValue(context.Type, out IUsageFinder value))
+		if (!_finders.TryGetValue(context.Type, out IUsageFinder finder))
 		{
 			context.Errors.Add($"No usage finder for type {context.Type}");
 			return new List<UsageMatch>();
 		}
-		List<UsageMatch> list = value.FindUsages(context, allCsFiles, registry, _importAnalyzer);
+		List<UsageMatch> usages = finder.FindUsages(context, allCsFiles, registry, _importAnalyzer);
 		if (context.Type == RenameType.Tag || context.Type == RenameType.Value)
 		{
 			UsageMatch usageMatch = FindSourceDefinition(context);
 			if (usageMatch != null)
 			{
-				list.Insert(0, usageMatch);
+				usages.Insert(0, usageMatch);
 			}
 		}
-		return list;
+		return usages;
 	}
 
 	public bool Execute(RenameContext context, bool dryRun = false)
@@ -301,12 +301,12 @@ public sealed class RenameOrchestrator
 			return false;
 		}
 		BehaviourParser behaviourParser = new BehaviourParser();
-		List<string> list = _config.ExcludePaths.ToList();
-		list.Add("**/.rename-backup/**");
-		List<string> list2 = FileScanner.FindFiles(_projectRoot, new List<string> { "**/*.cs" }, list);
-		foreach (string item in list2)
+		List<string> regenExcludePaths = _config.ExcludePaths.ToList();
+		regenExcludePaths.Add("**/.rename-backup/**");
+		List<string> allCsFiles = FileScanner.FindFiles(_projectRoot, new List<string> { "**/*.cs" }, regenExcludePaths);
+		foreach (string csFile in allCsFiles)
 		{
-			List<BehaviourDefinition> collection = (await behaviourParser.ParseFileAsync(item)).Where((BehaviourDefinition b) => b.LinkedApiTypeName == definition.ClassName || b.LinkedApiTypeName == definition.Namespace + "." + definition.ClassName).ToList();
+			List<BehaviourDefinition> collection = (await behaviourParser.ParseFileAsync(csFile)).Where((BehaviourDefinition b) => b.LinkedApiTypeName == definition.ClassName || b.LinkedApiTypeName == definition.Namespace + "." + definition.ClassName).ToList();
 			definition.LinkedBehaviours.AddRange(collection);
 		}
 		try
@@ -368,21 +368,21 @@ public sealed class RenameOrchestrator
 		if (context.Type == RenameType.Tag)
 		{
 			Regex regex = new Regex("\\b" + Regex.Escape(context.OldName) + "\\b");
-			bool flag = false;
+			bool insideTagsEnum = false;
 			for (int i = 0; i < array.Length; i++)
 			{
-				string text = array[i];
-				if (text.Contains("enum Tags"))
+				string line = array[i];
+				if (line.Contains("enum Tags"))
 				{
-					flag = true;
+					insideTagsEnum = true;
 				}
-				else if (flag && text.Contains('}'))
+				else if (insideTagsEnum && line.Contains('}'))
 				{
-					flag = false;
+					insideTagsEnum = false;
 				}
-				if (flag)
+				if (insideTagsEnum)
 				{
-					Match match = regex.Match(text);
+					Match match = regex.Match(line);
 					if (match.Success)
 					{
 						return new UsageMatch
@@ -393,7 +393,7 @@ public sealed class RenameOrchestrator
 							Length = match.Length,
 							MatchedText = context.OldName,
 							ReplacementText = context.NewName,
-							LineContext = text.TrimEnd('\r'),
+							LineContext = line.TrimEnd('\r'),
 							Category = "SourceDefinition",
 							IsAmbiguous = false
 						};
@@ -404,25 +404,25 @@ public sealed class RenameOrchestrator
 		else if (context.Type == RenameType.Value)
 		{
 			Regex regex2 = new Regex("\\b" + Regex.Escape(context.OldName) + "\\s*[;=]");
-			bool flag2 = false;
-			int num = 0;
+			bool insideValuesClass = false;
+			int braceDepth = 0;
 			for (int j = 0; j < array.Length; j++)
 			{
-				string text2 = array[j];
-				if (text2.Contains("class Values"))
+				string line = array[j];
+				if (line.Contains("class Values"))
 				{
-					flag2 = true;
-					num = 0;
+					insideValuesClass = true;
+					braceDepth = 0;
 				}
-				if (flag2)
+				if (insideValuesClass)
 				{
-					num += text2.Count((char c) => c == '{');
-					num -= text2.Count((char c) => c == '}');
-					if (num <= 0 && text2.Contains('}'))
+					braceDepth += line.Count((char c) => c == '{');
+					braceDepth -= line.Count((char c) => c == '}');
+					if (braceDepth <= 0 && line.Contains('}'))
 					{
-						flag2 = false;
+						insideValuesClass = false;
 					}
-					Match match2 = regex2.Match(text2);
+					Match match2 = regex2.Match(line);
 					if (match2.Success)
 					{
 						return new UsageMatch
@@ -433,7 +433,7 @@ public sealed class RenameOrchestrator
 							Length = context.OldName.Length,
 							MatchedText = context.OldName,
 							ReplacementText = context.NewName,
-							LineContext = text2.TrimEnd('\r'),
+							LineContext = line.TrimEnd('\r'),
 							Category = "SourceDefinition",
 							IsAmbiguous = false
 						};
@@ -474,13 +474,13 @@ public sealed class RenameOrchestrator
 			return _domains;
 		}
 		Logger.LogInfo("Scanning for EntityDomains...");
-		string text = FindSolutionFile(_projectRoot);
-		if (text != null)
+		string solutionFile = FindSolutionFile(_projectRoot);
+		if (solutionFile != null)
 		{
-			List<string> list = _config.ExcludePaths.ToList();
-			list.Add("**/.rename-backup/**");
-			using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(text, _config.AnalyzerMode, _config.IncludedProjects);
-			_domains = (await discovery.DiscoverDomainsAsync(list)).Values.Select((EntityDomainDefinition d) => new DomainEntry
+			List<string> domainExcludePaths = _config.ExcludePaths.ToList();
+			domainExcludePaths.Add("**/.rename-backup/**");
+			using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionFile, _config.AnalyzerMode, _config.IncludedProjects);
+			_domains = (await discovery.DiscoverDomainsAsync(domainExcludePaths)).Values.Select((EntityDomainDefinition d) => new DomainEntry
 			{
 				ClassName = d.ClassName,
 				EntityName = d.EntityName,

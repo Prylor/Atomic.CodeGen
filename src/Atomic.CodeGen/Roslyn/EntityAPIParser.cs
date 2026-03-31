@@ -62,18 +62,18 @@ public sealed class EntityAPIParser
 		Dictionary<string, string> values = TypeExtractor.ExtractValues(classDeclarationSyntax);
 		string[] stringArray = AttributeParser.GetStringArray(args, "ExcludeImports");
 		List<string> imports = ImportExtractor.Extract(root, stringArray);
-		string text = GetNamespace(classDeclarationSyntax);
-		string text2 = classDeclarationSyntax.Identifier.Text;
-		string text3 = AttributeParser.GetString(args, "Namespace");
-		string text4 = AttributeParser.GetString(args, "ClassName");
-		string text5 = AttributeParser.GetString(args, "Directory");
-		string text6 = Path.GetDirectoryName(filePath) ?? string.Empty;
+		string sourceNamespace = GetNamespace(classDeclarationSyntax);
+		string sourceClassName = classDeclarationSyntax.Identifier.Text;
+		string overrideNamespace = AttributeParser.GetString(args, "Namespace");
+		string overrideClassName = AttributeParser.GetString(args, "ClassName");
+		string overrideDirectory = AttributeParser.GetString(args, "Directory");
+		string sourceDirectory = Path.GetDirectoryName(filePath) ?? string.Empty;
 		EntityAPIDefinition entityAPIDefinition = new EntityAPIDefinition
 		{
 			SourceFile = filePath,
-			Namespace = ((!string.IsNullOrWhiteSpace(text3)) ? text3 : text),
-			ClassName = ((!string.IsNullOrWhiteSpace(text4)) ? text4 : text2),
-			Directory = ((!string.IsNullOrWhiteSpace(text5)) ? text5 : text6),
+			Namespace = ((!string.IsNullOrWhiteSpace(overrideNamespace)) ? overrideNamespace : sourceNamespace),
+			ClassName = ((!string.IsNullOrWhiteSpace(overrideClassName)) ? overrideClassName : sourceClassName),
+			Directory = ((!string.IsNullOrWhiteSpace(overrideDirectory)) ? overrideDirectory : sourceDirectory),
 			TargetProject = AttributeParser.GetString(args, "TargetProject"),
 			EntityType = AttributeParser.GetTypeName(args, "EntityType"),
 			AggressiveInlining = AttributeParser.GetBool(args, "AggressiveInlining", defaultValue: true),
@@ -104,18 +104,18 @@ public sealed class EntityAPIParser
 
 	private static bool IsAtomicEntityAPIAttribute(AttributeSyntax attr, bool hasAtomicEntitiesUsing)
 	{
-		string text = attr.Name.ToString();
-		if (text == "Atomic.Entities.EntityAPI" || text == "Atomic.Entities.EntityAPIAttribute")
+		string attributeName = attr.Name.ToString();
+		if (attributeName == "Atomic.Entities.EntityAPI" || attributeName == "Atomic.Entities.EntityAPIAttribute")
 		{
 			return true;
 		}
-		bool flag = hasAtomicEntitiesUsing;
-		if (flag)
+		bool isEntityApi = hasAtomicEntitiesUsing;
+		if (isEntityApi)
 		{
-			bool flag2 = text == "EntityAPI" || text == "EntityAPIAttribute";
-			flag = flag2;
+			bool isShortName = attributeName == "EntityAPI" || attributeName == "EntityAPIAttribute";
+			isEntityApi = isShortName;
 		}
-		if (flag)
+		if (isEntityApi)
 		{
 			return true;
 		}
@@ -148,15 +148,15 @@ public sealed class EntityAPIParser
 
 	private static CSharpParseOptions CreateParseOptionsWithSymbols(string sourceCode)
 	{
-		HashSet<string> hashSet = new HashSet<string>();
-		foreach (Match item in PreprocessorSymbolRegex.Matches(sourceCode))
+		HashSet<string> preprocessorSymbols = new HashSet<string>();
+		foreach (Match match in PreprocessorSymbolRegex.Matches(sourceCode))
 		{
-			string value = item.Groups[2].Value;
-			if (!string.IsNullOrEmpty(value))
+			string symbolName = match.Groups[2].Value;
+			if (!string.IsNullOrEmpty(symbolName))
 			{
-				hashSet.Add(value);
+				preprocessorSymbols.Add(symbolName);
 			}
 		}
-		return new CSharpParseOptions(LanguageVersion.Default, DocumentationMode.Parse, SourceCodeKind.Regular, hashSet);
+		return new CSharpParseOptions(LanguageVersion.Default, DocumentationMode.Parse, SourceCodeKind.Regular, preprocessorSymbols);
 	}
 }

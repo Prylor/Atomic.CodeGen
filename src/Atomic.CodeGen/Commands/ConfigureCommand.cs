@@ -16,8 +16,8 @@ public static class ConfigureCommand
 	public static Command Create()
 	{
 		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
-		Command obj = new Command("configure", "View and modify configuration settings") { option };
-		obj.SetHandler(async delegate(string projectPath)
+		Command command = new Command("configure", "View and modify configuration settings") { option };
+		command.SetHandler(async delegate(string projectPath)
 		{
 			string configPath = Path.Combine(projectPath, "atomic-codegen.json");
 			bool isNew = false;
@@ -37,15 +37,15 @@ public static class ConfigureCommand
 			{
 				AnsiConsole.Clear();
 				ShowCurrentConfig(config, configPath, hasChanges);
-				string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").PageSize(16).AddChoices("Edit Analyzer Mode", "Edit Included Projects", "Edit Verbose Logging", "Edit Orphan Tracking", "Edit Include Timestamp", "Edit Backup Cap", "Edit Formatting", "Edit Scan Paths", "Edit Exclude Paths", "─────────────────", "Reset to Defaults", hasChanges ? "[green]Save Changes[/]" : "[dim]Save (no changes)[/]", "Exit without Saving"));
-				if (text.Contains("Exit"))
+				string selectedOption = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").PageSize(16).AddChoices("Edit Analyzer Mode", "Edit Included Projects", "Edit Verbose Logging", "Edit Orphan Tracking", "Edit Include Timestamp", "Edit Backup Cap", "Edit Formatting", "Edit Scan Paths", "Edit Exclude Paths", "─────────────────", "Reset to Defaults", hasChanges ? "[green]Save Changes[/]" : "[dim]Save (no changes)[/]", "Exit without Saving"));
+				if (selectedOption.Contains("Exit"))
 				{
 					if (!hasChanges || AnsiConsole.Confirm("[yellow]You have unsaved changes. Exit anyway?[/]", defaultValue: false))
 					{
 						break;
 					}
 				}
-				else if (text.Contains("Save"))
+				else if (selectedOption.Contains("Save"))
 				{
 					if (hasChanges)
 					{
@@ -57,7 +57,7 @@ public static class ConfigureCommand
 						hasChanges = false;
 					}
 				}
-				else if (text.Contains("Reset"))
+				else if (selectedOption.Contains("Reset"))
 				{
 					if (AnsiConsole.Confirm("Reset all settings to defaults?", defaultValue: false))
 					{
@@ -67,58 +67,58 @@ public static class ConfigureCommand
 						await Task.Delay(1000);
 					}
 				}
-				else if (text.Contains("Analyzer Mode"))
+				else if (selectedOption.Contains("Analyzer Mode"))
 				{
 					config.AnalyzerMode = EditAnalyzerMode(config.AnalyzerMode);
 					hasChanges = true;
 				}
-				else if (text.Contains("Included Projects"))
+				else if (selectedOption.Contains("Included Projects"))
 				{
-					List<string> list = await EditIncludedProjectsAsync(projectPath, config.IncludedProjects);
-					if (list != null)
+					List<string> updatedProjects = await EditIncludedProjectsAsync(projectPath, config.IncludedProjects);
+					if (updatedProjects != null)
 					{
-						config.IncludedProjects = ((list.Count > 0) ? list : null);
+						config.IncludedProjects = ((updatedProjects.Count > 0) ? updatedProjects : null);
 						hasChanges = true;
 					}
 				}
-				else if (text.Contains("Verbose"))
+				else if (selectedOption.Contains("Verbose"))
 				{
 					config.Verbose = EditBoolSetting("Verbose Logging", config.Verbose, "Show detailed output during code generation");
 					hasChanges = true;
 				}
-				else if (text.Contains("Orphan"))
+				else if (selectedOption.Contains("Orphan"))
 				{
 					config.TrackOrphans = EditBoolSetting("Orphan Tracking", config.TrackOrphans, "Automatically clean up generated files when source is deleted");
 					hasChanges = true;
 				}
-				else if (text.Contains("Timestamp"))
+				else if (selectedOption.Contains("Timestamp"))
 				{
 					config.IncludeTimestamp = EditBoolSetting("Include Timestamp", config.IncludeTimestamp, "Add 'Generated at' timestamp to file headers (disable for cleaner git diffs)");
 					hasChanges = true;
 				}
-				else if (text.Contains("Backup Cap"))
+				else if (selectedOption.Contains("Backup Cap"))
 				{
 					config.BackupCap = EditBackupCap(config.BackupCap);
 					hasChanges = true;
 				}
-				else if (text.Contains("Formatting"))
+				else if (selectedOption.Contains("Formatting"))
 				{
 					config.Formatting = EditFormatting(config.Formatting);
 					hasChanges = true;
 				}
-				else if (text.Contains("Scan Paths"))
+				else if (selectedOption.Contains("Scan Paths"))
 				{
 					config.ScanPaths = EditPathList("Scan Paths", config.ScanPaths, "Glob patterns for finding EntityAPI files (fallback when no .sln)");
 					hasChanges = true;
 				}
-				else if (text.Contains("Exclude Paths"))
+				else if (selectedOption.Contains("Exclude Paths"))
 				{
 					config.ExcludePaths = EditPathList("Exclude Paths", config.ExcludePaths, "Glob patterns for excluding files from scanning");
 					hasChanges = true;
 				}
 			}
 		}, option);
-		return obj;
+		return command;
 	}
 
 	private static void ShowCurrentConfig(CodeGenConfig config, string configPath, bool hasChanges)
@@ -128,16 +128,16 @@ public static class ConfigureCommand
 		AnsiConsole.MarkupLine("[dim]File: " + Markup.Escape(configPath) + "[/]");
 		AnsiConsole.WriteLine();
 		Table table = new Table().Border(TableBorder.Rounded).AddColumn("[bold]Setting[/]").AddColumn("[bold]Value[/]");
-		string text = config.AnalyzerMode switch
+		string analyzerModeDisplay = config.AnalyzerMode switch
 		{
-			AnalyzerMode.Auto => "[cyan]Auto[/] [dim](MSBuild → Buildalyzer)[/]", 
-			AnalyzerMode.MSBuild => "[yellow]MSBuild[/] [dim](requires VS/SDK)[/]", 
-			AnalyzerMode.Buildalyzer => "[green]Buildalyzer[/] [dim](no VS/SDK needed)[/]", 
-			_ => config.AnalyzerMode.ToString(), 
+			AnalyzerMode.Auto => "[cyan]Auto[/] [dim](MSBuild → Buildalyzer)[/]",
+			AnalyzerMode.MSBuild => "[yellow]MSBuild[/] [dim](requires VS/SDK)[/]",
+			AnalyzerMode.Buildalyzer => "[green]Buildalyzer[/] [dim](no VS/SDK needed)[/]",
+			_ => config.AnalyzerMode.ToString(),
 		};
-		table.AddRow("Analyzer Mode", text);
-		string text2 = ((config.IncludedProjects == null || config.IncludedProjects.Count == 0) ? "[cyan]All projects[/]" : $"[yellow]{config.IncludedProjects.Count}[/] selected");
-		table.AddRow("Included Projects", text2);
+		table.AddRow("Analyzer Mode", analyzerModeDisplay);
+		string projectsDisplay = ((config.IncludedProjects == null || config.IncludedProjects.Count == 0) ? "[cyan]All projects[/]" : $"[yellow]{config.IncludedProjects.Count}[/] selected");
+		table.AddRow("Included Projects", projectsDisplay);
 		table.AddRow("Verbose Logging", config.Verbose ? "[green]Enabled[/]" : "[dim]Disabled[/]");
 		table.AddRow("Orphan Tracking", config.TrackOrphans ? "[green]Enabled[/]" : "[dim]Disabled[/]");
 		table.AddRow("Include Timestamp", config.IncludeTimestamp ? "[green]Enabled[/]" : "[dim]Disabled[/]");
@@ -189,10 +189,10 @@ public static class ConfigureCommand
 		string solutionPath = files[0];
 		AnsiConsole.MarkupLine("[dim]Solution: " + Path.GetFileName(solutionPath) + "[/]");
 		AnsiConsole.WriteLine();
-		List<string> list;
+		List<string> solutionProjects;
 		try
 		{
-			list = await AnsiConsole.Status().Spinner(Spinner.Known.Dots).StartAsync("Scanning solution for projects...", async (StatusContext ctx) => await Task.Run(() => GetProjectsFromSolution(solutionPath)));
+			solutionProjects = await AnsiConsole.Status().Spinner(Spinner.Known.Dots).StartAsync("Scanning solution for projects...", async (StatusContext ctx) => await Task.Run(() => GetProjectsFromSolution(solutionPath)));
 		}
 		catch (Exception ex)
 		{
@@ -202,7 +202,7 @@ public static class ConfigureCommand
 			Console.ReadKey(intercept: true);
 			return null;
 		}
-		if (list.Count == 0)
+		if (solutionProjects.Count == 0)
 		{
 			AnsiConsole.MarkupLine("[yellow]No projects found in solution.[/]");
 			AnsiConsole.WriteLine();
@@ -210,68 +210,68 @@ public static class ConfigureCommand
 			Console.ReadKey(intercept: true);
 			return null;
 		}
-		AnsiConsole.MarkupLine($"[green]Found {list.Count} projects[/]");
+		AnsiConsole.MarkupLine($"[green]Found {solutionProjects.Count} projects[/]");
 		AnsiConsole.WriteLine();
-		HashSet<string> hashSet = ((currentProjects != null) ? new HashSet<string>(currentProjects, StringComparer.OrdinalIgnoreCase) : null);
-		bool selectAll = hashSet == null || hashSet.Count == 0;
+		HashSet<string> currentProjectSet = ((currentProjects != null) ? new HashSet<string>(currentProjects, StringComparer.OrdinalIgnoreCase) : null);
+		bool selectAll = currentProjectSet == null || currentProjectSet.Count == 0;
 		MultiSelectionPrompt<string> multiSelectionPrompt = new MultiSelectionPrompt<string>().Title("[bold]Select projects to include:[/]").PageSize(15).InstructionsText("[dim](Press [blue]<space>[/] to toggle, [green]<enter>[/] to confirm)[/]")
-			.AddChoices(list);
+			.AddChoices(solutionProjects);
 		if (selectAll)
 		{
-			foreach (string item in list)
+			foreach (string project in solutionProjects)
 			{
-				multiSelectionPrompt.Select(item);
+				multiSelectionPrompt.Select(project);
 			}
 		}
 		else
 		{
-			foreach (string item2 in list)
+			foreach (string project in solutionProjects)
 			{
-				if (hashSet.Contains(item2))
+				if (currentProjectSet.Contains(project))
 				{
-					multiSelectionPrompt.Select(item2);
+					multiSelectionPrompt.Select(project);
 				}
 			}
 		}
-		List<string> list2 = AnsiConsole.Prompt(multiSelectionPrompt);
-		if (list2.Count == list.Count)
+		List<string> selectedProjects = AnsiConsole.Prompt(multiSelectionPrompt);
+		if (selectedProjects.Count == solutionProjects.Count)
 		{
 			AnsiConsole.MarkupLine("[cyan]All projects selected - will use all projects[/]");
 			Thread.Sleep(1000);
 			return new List<string>();
 		}
-		if (list2.Count == 0)
+		if (selectedProjects.Count == 0)
 		{
 			AnsiConsole.MarkupLine("[yellow]No projects selected - will use all projects[/]");
 			Thread.Sleep(1000);
 			return new List<string>();
 		}
-		AnsiConsole.MarkupLine($"[green]✓ Selected {list2.Count}/{list.Count} projects[/]");
+		AnsiConsole.MarkupLine($"[green]✓ Selected {selectedProjects.Count}/{solutionProjects.Count} projects[/]");
 		Thread.Sleep(1000);
-		return list2;
+		return selectedProjects;
 	}
 
 	private static List<string> GetProjectsFromSolution(string solutionPath)
 	{
-		List<string> list = new List<string>();
-		string[] array = File.ReadAllLines(solutionPath);
-		foreach (string text in array)
+		List<string> projectPaths = new List<string>();
+		string[] solutionLines = File.ReadAllLines(solutionPath);
+		foreach (string line in solutionLines)
 		{
-			if (!text.StartsWith("Project(") || !text.Contains(".csproj"))
+			if (!line.StartsWith("Project(") || !line.Contains(".csproj"))
 			{
 				continue;
 			}
-			string[] array2 = text.Split('"');
-			if (array2.Length >= 4)
+			string[] segments = line.Split('"');
+			if (segments.Length >= 4)
 			{
-				string text2 = array2[3];
-				if (!string.IsNullOrWhiteSpace(text2))
+				string relativePath = segments[3];
+				if (!string.IsNullOrWhiteSpace(relativePath))
 				{
-					list.Add(text2);
+					projectPaths.Add(relativePath);
 				}
 			}
 		}
-		return list.OrderBy((string p) => p).ToList();
+		return projectPaths.OrderBy((string p) => p).ToList();
 	}
 
 	private static AnalyzerMode EditAnalyzerMode(AnalyzerMode currentValue)
@@ -331,8 +331,8 @@ public static class ConfigureCommand
 		AnsiConsole.Write(new Rule("[bold]Edit Formatting[/]"));
 		AnsiConsole.MarkupLine("[dim]Configure code formatting for generated files[/]");
 		AnsiConsole.WriteLine();
-		string text = (current.UseTabs ? "Tabs" : $"Spaces ({current.IndentSize})");
-		AnsiConsole.MarkupLine("Current: [yellow]" + text + "[/]");
+		string currentDisplay = (current.UseTabs ? "Tabs" : $"Spaces ({current.IndentSize})");
+		AnsiConsole.MarkupLine("Current: [yellow]" + currentDisplay + "[/]");
 		AnsiConsole.WriteLine();
 		return AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Indentation style:").AddChoices("Spaces (4)", "Spaces (2)", "Tabs")) switch
 		{
@@ -357,7 +357,7 @@ public static class ConfigureCommand
 
 	private static List<string> EditPathList(string name, List<string> currentPaths, string description)
 	{
-		List<string> list = currentPaths.ToList();
+		List<string> patterns = currentPaths.ToList();
 		while (true)
 		{
 			AnsiConsole.Clear();
@@ -365,11 +365,11 @@ public static class ConfigureCommand
 			AnsiConsole.MarkupLine("[dim]" + description + "[/]");
 			AnsiConsole.WriteLine();
 			AnsiConsole.MarkupLine("[bold]Current patterns:[/]");
-			for (int i = 0; i < list.Count; i++)
+			for (int i = 0; i < patterns.Count; i++)
 			{
-				AnsiConsole.MarkupLine($"  [yellow]{i + 1}.[/] {Markup.Escape(list[i])}");
+				AnsiConsole.MarkupLine($"  [yellow]{i + 1}.[/] {Markup.Escape(patterns[i])}");
 			}
-			if (list.Count == 0)
+			if (patterns.Count == 0)
 			{
 				AnsiConsole.MarkupLine("  [dim](none)[/]");
 			}
@@ -379,25 +379,25 @@ public static class ConfigureCommand
 			{
 			case "Add Pattern":
 			{
-				string text = AnsiConsole.Prompt(new TextPrompt<string>("Enter pattern (e.g., [blue]Assets/**/*.cs[/]):").Validate((string p) => string.IsNullOrWhiteSpace(p) ? ValidationResult.Error("Pattern cannot be empty") : ValidationResult.Success()));
-				list.Add(text);
-				AnsiConsole.MarkupLine("[green]✓ Added:[/] " + Markup.Escape(text));
+				string newPattern = AnsiConsole.Prompt(new TextPrompt<string>("Enter pattern (e.g., [blue]Assets/**/*.cs[/]):").Validate((string p) => string.IsNullOrWhiteSpace(p) ? ValidationResult.Error("Pattern cannot be empty") : ValidationResult.Success()));
+				patterns.Add(newPattern);
+				AnsiConsole.MarkupLine("[green]✓ Added:[/] " + Markup.Escape(newPattern));
 				Thread.Sleep(500);
 				break;
 			}
 			case "Remove Pattern":
 			{
-				if (list.Count == 0)
+				if (patterns.Count == 0)
 				{
 					AnsiConsole.MarkupLine("[yellow]No patterns to remove[/]");
 					Thread.Sleep(1000);
 					break;
 				}
-				string text2 = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select pattern to remove:").AddChoices(list.Concat(new string[1] { "[Cancel]" })));
-				if (text2 != "[Cancel]")
+				string patternToRemove = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select pattern to remove:").AddChoices(patterns.Concat(new string[1] { "[Cancel]" })));
+				if (patternToRemove != "[Cancel]")
 				{
-					list.Remove(text2);
-					AnsiConsole.MarkupLine("[red]✓ Removed:[/] " + Markup.Escape(text2));
+					patterns.Remove(patternToRemove);
+					AnsiConsole.MarkupLine("[red]✓ Removed:[/] " + Markup.Escape(patternToRemove));
 					Thread.Sleep(500);
 				}
 				break;
@@ -405,13 +405,13 @@ public static class ConfigureCommand
 			case "Clear All":
 				if (AnsiConsole.Confirm("Remove all patterns?", defaultValue: false))
 				{
-					list.Clear();
+					patterns.Clear();
 					AnsiConsole.MarkupLine("[yellow]All patterns removed[/]");
 					Thread.Sleep(500);
 				}
 				break;
 			case "Done":
-				return list;
+				return patterns;
 			}
 		}
 	}

@@ -78,9 +78,9 @@ public sealed class SemanticUsageFinder
 		IFieldSymbol fieldSymbol = apiSymbol.GetMembers(tagName).OfType<IFieldSymbol>().FirstOrDefault((IFieldSymbol f) => f.IsStatic);
 		if (fieldSymbol != null)
 		{
-			foreach (SemanticUsage item in await FindSymbolReferencesAsync(fieldSymbol))
+			foreach (SemanticUsage fieldUsage in await FindSymbolReferencesAsync(fieldSymbol))
 			{
-				results.Add(CreateUsageMatch(item, tagName, newTagName, "TagField"));
+				results.Add(CreateUsageMatch(fieldUsage, tagName, newTagName, "TagField"));
 			}
 		}
 		string[] array = new string[3]
@@ -97,11 +97,11 @@ public sealed class SemanticUsageFinder
 			{
 				continue;
 			}
-			List<SemanticUsage> obj = await FindSymbolReferencesAsync(methodSymbol);
-			string newText = methodName.Replace(tagName, newTagName);
-			foreach (SemanticUsage item2 in obj)
+			List<SemanticUsage> methodUsages = await FindSymbolReferencesAsync(methodSymbol);
+			string newMethodName = methodName.Replace(tagName, newTagName);
+			foreach (SemanticUsage methodUsage in methodUsages)
 			{
-				results.Add(CreateUsageMatch(item2, methodName, newText, "TagMethod"));
+				results.Add(CreateUsageMatch(methodUsage, methodName, newMethodName, "TagMethod"));
 			}
 		}
 		await FindSourceDefinitionAsync(context, results);
@@ -122,9 +122,9 @@ public sealed class SemanticUsageFinder
 		IFieldSymbol fieldSymbol = apiSymbol.GetMembers(valueName).OfType<IFieldSymbol>().FirstOrDefault((IFieldSymbol f) => f.IsStatic);
 		if (fieldSymbol != null)
 		{
-			foreach (SemanticUsage item in await FindSymbolReferencesAsync(fieldSymbol))
+			foreach (SemanticUsage fieldUsage in await FindSymbolReferencesAsync(fieldSymbol))
 			{
-				results.Add(CreateUsageMatch(item, valueName, newValueName, "ValueField"));
+				results.Add(CreateUsageMatch(fieldUsage, valueName, newValueName, "ValueField"));
 			}
 		}
 		string[] array = new string[7] { "Get", "Set", "Has", "Del", "Add", "TryGet", "Ref" };
@@ -137,11 +137,11 @@ public sealed class SemanticUsageFinder
 			{
 				continue;
 			}
-			List<SemanticUsage> obj = await FindSymbolReferencesAsync(methodSymbol);
-			string newText = prefix + newValueName;
-			foreach (SemanticUsage item2 in obj)
+			List<SemanticUsage> methodUsages = await FindSymbolReferencesAsync(methodSymbol);
+			string newMethodName = prefix + newValueName;
+			foreach (SemanticUsage methodUsage in methodUsages)
 			{
-				results.Add(CreateUsageMatch(item2, methodName, newText, prefix + "Method"));
+				results.Add(CreateUsageMatch(methodUsage, methodName, newMethodName, prefix + "Method"));
 			}
 		}
 		await FindSourceDefinitionAsync(context, results);
@@ -177,9 +177,9 @@ public sealed class SemanticUsageFinder
 				SyntaxTree sourceTree = current.SourceTree;
 				if (sourceTree != null)
 				{
-					SourceText text = sourceTree.GetText();
-					LinePositionSpan linePositionSpan = text.Lines.GetLinePositionSpan(sourceSpan);
-					string lineContext = text.Lines[linePositionSpan.Start.Line].ToString();
+					SourceText sourceText = sourceTree.GetText();
+					LinePositionSpan linePositionSpan = sourceText.Lines.GetLinePositionSpan(sourceSpan);
+					string lineContext = sourceText.Lines[linePositionSpan.Start.Line].ToString();
 					results.Add(new UsageMatch
 					{
 						FilePath = sourceTree.FilePath,
@@ -213,9 +213,9 @@ public sealed class SemanticUsageFinder
 					SyntaxTree sourceTree2 = current3.SourceTree;
 					if (sourceTree2 != null)
 					{
-						SourceText text2 = sourceTree2.GetText();
-						LinePositionSpan linePositionSpan2 = text2.Lines.GetLinePositionSpan(sourceSpan2);
-						string lineContext2 = text2.Lines[linePositionSpan2.Start.Line].ToString();
+						SourceText ctorSourceText = sourceTree2.GetText();
+						LinePositionSpan linePositionSpan2 = ctorSourceText.Lines.GetLinePositionSpan(sourceSpan2);
+						string lineContext2 = ctorSourceText.Lines[linePositionSpan2.Start.Line].ToString();
 						results.Add(new UsageMatch
 						{
 							FilePath = sourceTree2.FilePath,
@@ -232,18 +232,18 @@ public sealed class SemanticUsageFinder
 				}
 			}
 		}
-		foreach (SemanticUsage item in await FindSymbolReferencesAsync(namedTypeSymbol))
+		foreach (SemanticUsage typeUsage in await FindSymbolReferencesAsync(namedTypeSymbol))
 		{
-			string behaviourUsageCategory = GetBehaviourUsageCategory(item);
-			results.Add(CreateUsageMatch(item, behaviourName, newBehaviourName, behaviourUsageCategory));
+			string behaviourUsageCategory = GetBehaviourUsageCategory(typeUsage);
+			results.Add(CreateUsageMatch(typeUsage, behaviourName, newBehaviourName, behaviourUsageCategory));
 		}
 		INamedTypeSymbol apiSymbol = await FindApiClassAsync(context.OwnerName, context.OwnerNamespace);
 		if (apiSymbol != null)
 		{
-			string text3 = (behaviourName.EndsWith("Behaviour", StringComparison.OrdinalIgnoreCase) ? behaviourName.Substring(0, behaviourName.Length - "Behaviour".Length) : behaviourName);
-			string text4 = (newBehaviourName.EndsWith("Behaviour", StringComparison.OrdinalIgnoreCase) ? newBehaviourName.Substring(0, newBehaviourName.Length - "Behaviour".Length) : newBehaviourName);
-			string methodSuffix = text3 + "Behaviour";
-			string newMethodSuffix = text4 + "Behaviour";
+			string oldBaseName = (behaviourName.EndsWith("Behaviour", StringComparison.OrdinalIgnoreCase) ? behaviourName.Substring(0, behaviourName.Length - "Behaviour".Length) : behaviourName);
+			string newBaseName = (newBehaviourName.EndsWith("Behaviour", StringComparison.OrdinalIgnoreCase) ? newBehaviourName.Substring(0, newBehaviourName.Length - "Behaviour".Length) : newBehaviourName);
+			string methodSuffix = oldBaseName + "Behaviour";
+			string newMethodSuffix = newBaseName + "Behaviour";
 			string[] array = new string[5] { "Has", "Get", "Add", "Del", "TryGet" };
 			string[] array2 = array;
 			foreach (string prefix in array2)
@@ -254,11 +254,11 @@ public sealed class SemanticUsageFinder
 				{
 					continue;
 				}
-				List<SemanticUsage> obj = await FindSymbolReferencesAsync(methodSymbol);
-				string newText = prefix + newMethodSuffix;
-				foreach (SemanticUsage item2 in obj)
+				List<SemanticUsage> methodUsages = await FindSymbolReferencesAsync(methodSymbol);
+				string newMethodName = prefix + newMethodSuffix;
+				foreach (SemanticUsage methodUsage in methodUsages)
 				{
-					results.Add(CreateUsageMatch(item2, methodName, newText, prefix + "Method"));
+					results.Add(CreateUsageMatch(methodUsage, methodName, newMethodName, prefix + "Method"));
 				}
 			}
 		}
@@ -295,32 +295,32 @@ public sealed class SemanticUsageFinder
 		HashSet<string> generatedFiles = await FindGeneratedFilesAsync(domainSourceFile);
 		generatedFiles.Add(Path.GetFullPath(domainSourceFile));
 		Logger.LogVerbose($"Found {generatedFiles.Count} files generated by this domain");
-		List<INamedTypeSymbol> list = await _workspace.GetDefinedTypesAsync(generatedFiles);
-		Logger.LogVerbose($"Found {list.Count} defined types");
-		foreach (INamedTypeSymbol item2 in list)
+		List<INamedTypeSymbol> definedTypes = await _workspace.GetDefinedTypesAsync(generatedFiles);
+		Logger.LogVerbose($"Found {definedTypes.Count} defined types");
+		foreach (INamedTypeSymbol typeSymbol in definedTypes)
 		{
-			string typeName = item2.Name;
+			string typeName = typeSymbol.Name;
 			if (!typeName.Contains(entityName))
 			{
 				continue;
 			}
 			string newTypeName = typeName.Replace(entityName, newEntityName);
-			foreach (SemanticUsage item3 in await FindSymbolReferencesAsync(item2))
+			foreach (SemanticUsage typeUsage in await FindSymbolReferencesAsync(typeSymbol))
 			{
-				results.Add(CreateUsageMatch(item3, typeName, newTypeName, GetDomainTypeCategory(typeName, entityName)));
+				results.Add(CreateUsageMatch(typeUsage, typeName, newTypeName, GetDomainTypeCategory(typeName, entityName)));
 			}
 		}
 		await FindEntityNamePropertyAsync(domainSourceFile, entityName, newEntityName, results);
-		foreach (string item4 in generatedFiles)
+		foreach (string generatedFile in generatedFiles)
 		{
-			if (!item4.Equals(Path.GetFullPath(domainSourceFile), StringComparison.OrdinalIgnoreCase))
+			if (!generatedFile.Equals(Path.GetFullPath(domainSourceFile), StringComparison.OrdinalIgnoreCase))
 			{
-				string fileName = Path.GetFileName(item4);
+				string fileName = Path.GetFileName(generatedFile);
 				if (fileName.Contains(entityName))
 				{
-					string path = fileName.Replace(entityName, newEntityName);
-					string item = Path.Combine(Path.GetDirectoryName(item4) ?? "", path);
-					context.FileRenames.Add((item4, item));
+					string renamedFileName = fileName.Replace(entityName, newEntityName);
+					string renamedFilePath = Path.Combine(Path.GetDirectoryName(generatedFile) ?? "", renamedFileName);
+					context.FileRenames.Add((generatedFile, renamedFilePath));
 				}
 			}
 		}
@@ -349,9 +349,9 @@ public sealed class SemanticUsageFinder
 
 	private bool IsGeneratedByDomain(string filePath, string content, string domainSourceFile)
 	{
-		string text = Path.GetFullPath(filePath).Replace('/', '\\');
-		string text2 = Path.GetFullPath(domainSourceFile).Replace('/', '\\');
-		if (text.Equals(text2, StringComparison.OrdinalIgnoreCase))
+		string normalizedFilePath = Path.GetFullPath(filePath).Replace('/', '\\');
+		string normalizedDomainPath = Path.GetFullPath(domainSourceFile).Replace('/', '\\');
+		if (normalizedFilePath.Equals(normalizedDomainPath, StringComparison.OrdinalIgnoreCase))
 		{
 			return false;
 		}
@@ -361,19 +361,19 @@ public sealed class SemanticUsageFinder
 		{
 			return false;
 		}
-		string text3 = match.Groups[1].Value.Trim().Replace('/', '\\');
-		if (!Path.IsPathRooted(text3))
+		string referencedSourcePath = match.Groups[1].Value.Trim().Replace('/', '\\');
+		if (!Path.IsPathRooted(referencedSourcePath))
 		{
-			string fileName = Path.GetFileName(text2);
-			if (text3.EndsWith(fileName, StringComparison.OrdinalIgnoreCase))
+			string fileName = Path.GetFileName(normalizedDomainPath);
+			if (referencedSourcePath.EndsWith(fileName, StringComparison.OrdinalIgnoreCase))
 			{
 				return true;
 			}
 		}
 		else
 		{
-			text3 = Path.GetFullPath(text3).Replace('/', '\\');
-			if (text3.Equals(text2, StringComparison.OrdinalIgnoreCase))
+			referencedSourcePath = Path.GetFullPath(referencedSourcePath).Replace('/', '\\');
+			if (referencedSourcePath.Equals(normalizedDomainPath, StringComparison.OrdinalIgnoreCase))
 			{
 				return true;
 			}
@@ -442,22 +442,22 @@ public sealed class SemanticUsageFinder
 		}
 		string[] array = (await File.ReadAllTextAsync(filePath)).Split('\n');
 		Regex regex = new Regex("EntityName\\s*=>\\s*\"" + Regex.Escape(entityName) + "\"");
-		int num = 0;
+		int lineNumber = 0;
 		string[] array2 = array;
-		foreach (string text in array2)
+		foreach (string line in array2)
 		{
-			num++;
-			foreach (Match item in regex.Matches(text))
+			lineNumber++;
+			foreach (Match regexMatch in regex.Matches(line))
 			{
 				results.Add(new UsageMatch
 				{
 					FilePath = filePath,
-					Line = num,
-					Column = item.Index + 1,
-					Length = item.Length,
-					MatchedText = item.Value,
+					Line = lineNumber,
+					Column = regexMatch.Index + 1,
+					Length = regexMatch.Length,
+					MatchedText = regexMatch.Value,
 					ReplacementText = "EntityName => \"" + newEntityName + "\"",
-					LineContext = text.TrimEnd('\r'),
+					LineContext = line.TrimEnd('\r'),
 					Category = "EntityNameProperty",
 					IsAmbiguous = false
 				});
@@ -477,11 +477,11 @@ public sealed class SemanticUsageFinder
 			foreach (SyntaxTree syntaxTree in compilation.SyntaxTrees)
 			{
 				SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
-				foreach (ClassDeclarationSyntax item in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<ClassDeclarationSyntax>())
+				foreach (ClassDeclarationSyntax classDecl in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<ClassDeclarationSyntax>())
 				{
-					if (item.Identifier.Text == className)
+					if (classDecl.Identifier.Text == className)
 					{
-						INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(item);
+						INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(classDecl);
 						if (declaredSymbol != null && (string.IsNullOrEmpty(namespaceName) || declaredSymbol.ContainingNamespace?.ToDisplayString() == namespaceName))
 						{
 							return declaredSymbol;
@@ -505,11 +505,11 @@ public sealed class SemanticUsageFinder
 			foreach (SyntaxTree syntaxTree in compilation.SyntaxTrees)
 			{
 				SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
-				foreach (TypeDeclarationSyntax item in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>())
+				foreach (TypeDeclarationSyntax typeDecl in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>())
 				{
-					if (item.Identifier.Text == typeName)
+					if (typeDecl.Identifier.Text == typeName)
 					{
-						INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(item);
+						INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(typeDecl);
 						if (declaredSymbol != null && (string.IsNullOrEmpty(namespaceName) || declaredSymbol.ContainingNamespace?.ToDisplayString() == namespaceName))
 						{
 							return declaredSymbol;
@@ -543,11 +543,11 @@ public sealed class SemanticUsageFinder
 					continue;
 				}
 				SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
-				foreach (TypeDeclarationSyntax item in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>())
+				foreach (TypeDeclarationSyntax typeDecl in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>())
 				{
-					if (item.Identifier.Text == typeName)
+					if (typeDecl.Identifier.Text == typeName)
 					{
-						INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(item);
+						INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(typeDecl);
 						if (declaredSymbol != null)
 						{
 							return declaredSymbol;
@@ -568,9 +568,9 @@ public sealed class SemanticUsageFinder
 		}
 		try
 		{
-			foreach (ReferencedSymbol item in await SymbolFinder.FindReferencesAsync(symbol, _workspace.Solution))
+			foreach (ReferencedSymbol referencedSymbol in await SymbolFinder.FindReferencesAsync(symbol, _workspace.Solution))
 			{
-				foreach (ReferenceLocation location in item.Locations)
+				foreach (ReferenceLocation location in referencedSymbol.Locations)
 				{
 					string filePath = location.Document.FilePath;
 					if (filePath != null)
@@ -610,15 +610,15 @@ public sealed class SemanticUsageFinder
 		SyntaxNode syntaxNode = await CSharpSyntaxTree.ParseText(content, options).GetRootAsync();
 		if (context.Type == RenameType.Tag)
 		{
-			foreach (EnumDeclarationSyntax item in from e in syntaxNode.DescendantNodes().OfType<EnumDeclarationSyntax>()
+			foreach (EnumDeclarationSyntax tagsEnum in from e in syntaxNode.DescendantNodes().OfType<EnumDeclarationSyntax>()
 				where e.Identifier.Text == "Tags"
 				select e)
 			{
-				EnumMemberDeclarationSyntax enumMemberDeclarationSyntax = item.Members.FirstOrDefault((EnumMemberDeclarationSyntax m) => m.Identifier.Text == context.OldName);
+				EnumMemberDeclarationSyntax enumMemberDeclarationSyntax = tagsEnum.Members.FirstOrDefault((EnumMemberDeclarationSyntax m) => m.Identifier.Text == context.OldName);
 				if (enumMemberDeclarationSyntax != null)
 				{
 					FileLinePositionSpan lineSpan = enumMemberDeclarationSyntax.Identifier.GetLocation().GetLineSpan();
-					string text = content.Split('\n')[lineSpan.StartLinePosition.Line];
+					string lineContext = content.Split('\n')[lineSpan.StartLinePosition.Line];
 					results.Add(new UsageMatch
 					{
 						FilePath = context.SourceFilePath,
@@ -627,7 +627,7 @@ public sealed class SemanticUsageFinder
 						Length = context.OldName.Length,
 						MatchedText = context.OldName,
 						ReplacementText = context.NewName,
-						LineContext = text.TrimEnd('\r'),
+						LineContext = lineContext.TrimEnd('\r'),
 						Category = "SourceDefinition",
 						IsAmbiguous = false
 					});
@@ -639,16 +639,16 @@ public sealed class SemanticUsageFinder
 		{
 			return;
 		}
-		foreach (ClassDeclarationSyntax item2 in from c in syntaxNode.DescendantNodes().OfType<ClassDeclarationSyntax>()
+		foreach (ClassDeclarationSyntax valuesClass in from c in syntaxNode.DescendantNodes().OfType<ClassDeclarationSyntax>()
 			where c.Identifier.Text == "Values"
 			select c)
 		{
-			foreach (VariableDeclaratorSyntax item3 in from v in item2.DescendantNodes().OfType<VariableDeclaratorSyntax>()
+			foreach (VariableDeclaratorSyntax valueDeclarator in from v in valuesClass.DescendantNodes().OfType<VariableDeclaratorSyntax>()
 				where v.Identifier.Text == context.OldName
 				select v)
 			{
-				FileLinePositionSpan lineSpan2 = item3.Identifier.GetLocation().GetLineSpan();
-				string text2 = content.Split('\n')[lineSpan2.StartLinePosition.Line];
+				FileLinePositionSpan lineSpan2 = valueDeclarator.Identifier.GetLocation().GetLineSpan();
+				string lineContext = content.Split('\n')[lineSpan2.StartLinePosition.Line];
 				results.Add(new UsageMatch
 				{
 					FilePath = context.SourceFilePath,
@@ -657,7 +657,7 @@ public sealed class SemanticUsageFinder
 					Length = context.OldName.Length,
 					MatchedText = context.OldName,
 					ReplacementText = context.NewName,
-					LineContext = text2.TrimEnd('\r'),
+					LineContext = lineContext.TrimEnd('\r'),
 					Category = "SourceDefinition",
 					IsAmbiguous = false
 				});
@@ -667,16 +667,16 @@ public sealed class SemanticUsageFinder
 
 	private static CSharpParseOptions CreateParseOptionsWithSymbols(string sourceCode)
 	{
-		HashSet<string> hashSet = new HashSet<string>();
-		foreach (Match item in PreprocessorSymbolRegex.Matches(sourceCode))
+		HashSet<string> preprocessorSymbols = new HashSet<string>();
+		foreach (Match symbolMatch in PreprocessorSymbolRegex.Matches(sourceCode))
 		{
-			string value = item.Groups[2].Value;
-			if (!string.IsNullOrEmpty(value))
+			string symbolName = symbolMatch.Groups[2].Value;
+			if (!string.IsNullOrEmpty(symbolName))
 			{
-				hashSet.Add(value);
+				preprocessorSymbols.Add(symbolName);
 			}
 		}
-		return new CSharpParseOptions(LanguageVersion.Default, DocumentationMode.Parse, SourceCodeKind.Regular, hashSet);
+		return new CSharpParseOptions(LanguageVersion.Default, DocumentationMode.Parse, SourceCodeKind.Regular, preprocessorSymbols);
 	}
 
 	private UsageMatch CreateUsageMatch(SemanticUsage usage, string oldText, string newText, string category)

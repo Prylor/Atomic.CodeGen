@@ -19,8 +19,8 @@ public static class OrphanedFilesCleaner
 		int cleanedCount = 0;
 		string projectRoot = config.GetAbsoluteProjectRoot();
 		List<string> excludePatterns = new List<string> { "**/obj/**", "**/bin/**", "**/Library/**", "**/Temp/**" };
-		List<string> list = FileScanner.FindFiles(projectRoot, "**/*.cs", excludePatterns);
-		foreach (string file in list)
+		List<string> csFiles = FileScanner.FindFiles(projectRoot, "**/*.cs", excludePatterns);
+		foreach (string file in csFiles)
 		{
 			if (await IsOrphanedAsync(file, projectRoot, expectedGeneratedFiles))
 			{
@@ -54,23 +54,23 @@ public static class OrphanedFilesCleaner
 			{
 				return true;
 			}
-			string text = match.Groups[1].Value.Trim();
-			if (!Path.IsPathRooted(text))
+			string sourceFilePath = match.Groups[1].Value.Trim();
+			if (!Path.IsPathRooted(sourceFilePath))
 			{
-				text = Path.Combine(projectRoot, text);
+				sourceFilePath = Path.Combine(projectRoot, sourceFilePath);
 			}
-			if (!File.Exists(text))
-			{
-				return true;
-			}
-			string text2 = await File.ReadAllTextAsync(text);
-			if (string.IsNullOrWhiteSpace(text2))
+			if (!File.Exists(sourceFilePath))
 			{
 				return true;
 			}
-			bool isEntityApi = text2.Contains("[EntityAPI") || text2.Contains("EntityAPIAttribute");
-			bool flag = text2.Contains("IEntityDomain") || text2.Contains("EntityDomainBuilder");
-			if (!isEntityApi && !flag)
+			string sourceContent = await File.ReadAllTextAsync(sourceFilePath);
+			if (string.IsNullOrWhiteSpace(sourceContent))
+			{
+				return true;
+			}
+			bool isEntityApi = sourceContent.Contains("[EntityAPI") || sourceContent.Contains("EntityAPIAttribute");
+			bool isDomain = sourceContent.Contains("IEntityDomain") || sourceContent.Contains("EntityDomainBuilder");
+			if (!isEntityApi && !isDomain)
 			{
 				return true;
 			}
@@ -98,11 +98,11 @@ public static class OrphanedFilesCleaner
 				File.Delete(generatedFilePath);
 				Logger.LogVerbose("Deleted: " + generatedFilePath);
 			}
-			string text = generatedFilePath + ".meta";
-			if (File.Exists(text))
+			string metaFilePath = generatedFilePath + ".meta";
+			if (File.Exists(metaFilePath))
 			{
-				File.Delete(text);
-				Logger.LogVerbose("Deleted: " + text);
+				File.Delete(metaFilePath);
+				Logger.LogVerbose("Deleted: " + metaFilePath);
 			}
 		}
 		catch (Exception ex)

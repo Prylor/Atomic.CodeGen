@@ -23,11 +23,11 @@ public static class EntityBakerGenerators
 
 	public static async Task GenerateOptimizedBakerAsync(EntityDomainDefinition definition, CodeGenConfig config, string outputDir)
 	{
-		bool flag = definition.Bakers.HasFlag(EntityBakerMode.Standard) && definition.Bakers.HasFlag(EntityBakerMode.Optimized);
-		string text = (flag ? "Optimized" : "");
-		string fileName = definition.EntityName + "Baker" + text + ".cs";
+		bool hasBothBakers = definition.Bakers.HasFlag(EntityBakerMode.Standard) && definition.Bakers.HasFlag(EntityBakerMode.Optimized);
+		string suffix = (hasBothBakers ? "Optimized" : "");
+		string fileName = definition.EntityName + "Baker" + suffix + ".cs";
 		string filePath = Path.Combine(outputDir, fileName);
-		string contents = GenerateBakerContent(definition, config, fileName, isOptimized: true, flag);
+		string contents = GenerateBakerContent(definition, config, fileName, isOptimized: true, hasBothBakers);
 		await File.WriteAllTextAsync(filePath, contents);
 		await EntityDomainFileHelper.GenerateMetaFileAsync(filePath);
 		await EntityDomainFileHelper.LinkToProjectsAsync(definition, config, filePath);
@@ -42,12 +42,12 @@ public static class EntityBakerGenerators
 		sb.AppendLine("using Atomic.Entities;");
 		sb.AppendLine("using UnityEngine;");
 		string[] imports = definition.GetImports();
-		foreach (string text in imports)
+		foreach (string importEntry in imports)
 		{
-			if (!string.IsNullOrWhiteSpace(text))
+			if (!string.IsNullOrWhiteSpace(importEntry))
 			{
-				string text2 = text.Trim();
-				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				string trimmedImport = importEntry.Trim();
+				sb.AppendLine(trimmedImport.StartsWith("using") ? trimmedImport : ("using " + trimmedImport + ";"));
 			}
 		}
 		sb.AppendLine();
@@ -74,10 +74,10 @@ public static class EntityBakerGenerators
 		{
 			sb.AppendLine($"    [RequireComponent(typeof({definition.EntityName}View))]");
 		}
-		string text3 = ((useSuffixes && isOptimized) ? "Optimized" : "");
-		string value = definition.EntityName + "Baker" + text3;
-		string value2 = (isOptimized ? $"SceneEntityBakerOptimized<I{definition.EntityName}, {definition.EntityName}View>" : ("SceneEntityBaker<I" + definition.EntityName + ">"));
-		sb.AppendLine($"    public abstract class {value} : {value2}");
+		string classSuffix = ((useSuffixes && isOptimized) ? "Optimized" : "");
+		string className = definition.EntityName + "Baker" + classSuffix;
+		string baseClassName = (isOptimized ? $"SceneEntityBakerOptimized<I{definition.EntityName}, {definition.EntityName}View>" : ("SceneEntityBaker<I" + definition.EntityName + ">"));
+		sb.AppendLine($"    public abstract class {className} : {baseClassName}");
 		sb.AppendLine("    {");
 		sb.AppendLine("    }");
 		sb.AppendLine("}");

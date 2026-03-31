@@ -19,11 +19,11 @@ public static class AttributeParser
 		while (enumerator.MoveNext())
 		{
 			AttributeArgumentSyntax current = enumerator.Current;
-			string text = current.NameEquals?.Name.Identifier.Text;
-			if (text != null)
+			string argumentName = current.NameEquals?.Name.Identifier.Text;
+			if (argumentName != null)
 			{
 				object value = ExtractValue(current.Expression);
-				dictionary[text] = value;
+				dictionary[argumentName] = value;
 			}
 		}
 		return dictionary;

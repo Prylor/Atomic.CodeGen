@@ -19,26 +19,26 @@ public static class TypeExtractor
 
 	public static Dictionary<string, string> ExtractValues(ClassDeclarationSyntax classDecl)
 	{
-		ClassDeclarationSyntax classDeclarationSyntax = classDecl.Members.OfType<ClassDeclarationSyntax>().FirstOrDefault((ClassDeclarationSyntax c) => c.Identifier.Text == "Values");
-		if (classDeclarationSyntax == null)
+		ClassDeclarationSyntax valuesClass = classDecl.Members.OfType<ClassDeclarationSyntax>().FirstOrDefault((ClassDeclarationSyntax c) => c.Identifier.Text == "Values");
+		if (valuesClass == null)
 		{
 			return new Dictionary<string, string>();
 		}
 		Dictionary<string, string> dictionary = new Dictionary<string, string>();
-		foreach (FieldDeclarationSyntax item in classDeclarationSyntax.Members.OfType<FieldDeclarationSyntax>())
+		foreach (FieldDeclarationSyntax fieldDecl in valuesClass.Members.OfType<FieldDeclarationSyntax>())
 		{
-			string value = item.Declaration.Type.ToString();
-			SeparatedSyntaxList<VariableDeclaratorSyntax>.Enumerator enumerator2 = item.Declaration.Variables.GetEnumerator();
+			string fieldTypeName = fieldDecl.Declaration.Type.ToString();
+			SeparatedSyntaxList<VariableDeclaratorSyntax>.Enumerator enumerator2 = fieldDecl.Declaration.Variables.GetEnumerator();
 			while (enumerator2.MoveNext())
 			{
 				VariableDeclaratorSyntax current2 = enumerator2.Current;
-				dictionary[current2.Identifier.Text] = value;
+				dictionary[current2.Identifier.Text] = fieldTypeName;
 			}
 		}
-		foreach (PropertyDeclarationSyntax item2 in classDeclarationSyntax.Members.OfType<PropertyDeclarationSyntax>())
+		foreach (PropertyDeclarationSyntax propertyDecl in valuesClass.Members.OfType<PropertyDeclarationSyntax>())
 		{
-			string value2 = item2.Type.ToString();
-			dictionary[item2.Identifier.Text] = value2;
+			string propertyTypeName = propertyDecl.Type.ToString();
+			dictionary[propertyDecl.Identifier.Text] = propertyTypeName;
 		}
 		return dictionary;
 	}

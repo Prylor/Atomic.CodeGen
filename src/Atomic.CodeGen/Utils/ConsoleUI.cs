@@ -20,16 +20,16 @@ public static class ConsoleUI
 
 	public static RenameCategory SelectRenameCategory()
 	{
-		string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What do you want to rename?[/]").PageSize(10).AddChoices("EntityAPI Tag or Value", "Behaviour", "Domain"));
-		if (text.StartsWith("EntityAPI"))
+		string selectedChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What do you want to rename?[/]").PageSize(10).AddChoices("EntityAPI Tag or Value", "Behaviour", "Domain"));
+		if (selectedChoice.StartsWith("EntityAPI"))
 		{
 			return RenameCategory.EntityAPI;
 		}
-		if (text.StartsWith("Behaviour"))
+		if (selectedChoice.StartsWith("Behaviour"))
 		{
 			return RenameCategory.Behaviour;
 		}
-		if (text.StartsWith("Domain"))
+		if (selectedChoice.StartsWith("Domain"))
 		{
 			return RenameCategory.Domain;
 		}
@@ -52,28 +52,28 @@ public static class ConsoleUI
 			AnsiConsole.MarkupLine("[red]No EntityAPIs found in project[/]");
 			return null;
 		}
-		string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select EntityAPI:[/]").PageSize(15).AddChoices(apis.Select((ApiEntry a) => a.ClassName + " (" + a.Namespace + ")")));
-		string className = text.Split(' ')[0];
+		string selectedApi = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select EntityAPI:[/]").PageSize(15).AddChoices(apis.Select((ApiEntry a) => a.ClassName + " (" + a.Namespace + ")")));
+		string className = selectedApi.Split(' ')[0];
 		return apis.FirstOrDefault((ApiEntry a) => a.ClassName == className);
 	}
 
 	public static (ApiEntry api, string behaviourName)? SelectBehaviour(IReadOnlyCollection<ApiEntry> apis)
 	{
-		List<(ApiEntry, string, string)> list = new List<(ApiEntry, string, string)>();
+		List<(ApiEntry, string, string)> behaviourEntries = new List<(ApiEntry, string, string)>();
 		foreach (ApiEntry api in apis)
 		{
 			foreach (string behaviour in api.Behaviours)
 			{
-				list.Add((api, behaviour, behaviour + " (linked to " + api.ClassName + ")"));
+				behaviourEntries.Add((api, behaviour, behaviour + " (linked to " + api.ClassName + ")"));
 			}
 		}
-		if (list.Count == 0)
+		if (behaviourEntries.Count == 0)
 		{
 			AnsiConsole.MarkupLine("[red]No behaviours found. Use [[LinkTo]] attribute to link behaviours to EntityAPIs.[/]");
 			return null;
 		}
-		string choice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select Behaviour to rename:[/]").PageSize(15).AddChoices(list.Select<(ApiEntry, string, string), string>(((ApiEntry api, string behaviour, string display) b) => b.display)));
-		(ApiEntry, string, string) tuple = list.FirstOrDefault<(ApiEntry, string, string)>(((ApiEntry api, string behaviour, string display) b) => b.display == choice);
+		string choice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select Behaviour to rename:[/]").PageSize(15).AddChoices(behaviourEntries.Select<(ApiEntry, string, string), string>(((ApiEntry api, string behaviour, string display) b) => b.display)));
+		(ApiEntry, string, string) tuple = behaviourEntries.FirstOrDefault<(ApiEntry, string, string)>(((ApiEntry api, string behaviour, string display) b) => b.display == choice);
 		return (tuple.Item1, tuple.Item2);
 	}
 
@@ -84,26 +84,26 @@ public static class ConsoleUI
 			AnsiConsole.MarkupLine("[red]No EntityDomains found in project[/]");
 			return null;
 		}
-		string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select EntityDomain:[/]").PageSize(15).AddChoices(domains.Select((DomainEntry d) => d.EntityName + " (" + d.ClassName + ")")));
-		string entityName = text.Split(' ')[0];
+		string selectedDomain = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select EntityDomain:[/]").PageSize(15).AddChoices(domains.Select((DomainEntry d) => d.EntityName + " (" + d.ClassName + ")")));
+		string entityName = selectedDomain.Split(' ')[0];
 		return domains.FirstOrDefault((DomainEntry d) => d.EntityName == entityName);
 	}
 
 	public static string? SelectSymbol(ApiEntry api, RenameType type)
 	{
-		List<string> list = type switch
+		List<string> symbolNames = type switch
 		{
-			RenameType.Tag => api.Tags.ToList(), 
-			RenameType.Value => api.Values.ToList(), 
-			RenameType.Behaviour => api.Behaviours.ToList(), 
-			_ => new List<string>(), 
+			RenameType.Tag => api.Tags.ToList(),
+			RenameType.Value => api.Values.ToList(),
+			RenameType.Behaviour => api.Behaviours.ToList(),
+			_ => new List<string>(),
 		};
-		if (list.Count == 0)
+		if (symbolNames.Count == 0)
 		{
 			AnsiConsole.MarkupLine($"[red]No {type}s found in {api.ClassName}[/]");
 			return null;
 		}
-		return AnsiConsole.Prompt(new SelectionPrompt<string>().Title($"[bold]Select {type} to rename:[/]").PageSize(15).AddChoices(list));
+		return AnsiConsole.Prompt(new SelectionPrompt<string>().Title($"[bold]Select {type} to rename:[/]").PageSize(15).AddChoices(symbolNames));
 	}
 
 	public static string PromptNewName(string oldName)
@@ -129,11 +129,11 @@ public static class ConsoleUI
 		AnsiConsole.WriteLine();
 		Table table = new Table().Border(TableBorder.Rounded).AddColumn("File").AddColumn("Changes")
 			.AddColumn("Categories");
-		foreach (FileChangeSummary item3 in preview)
+		foreach (FileChangeSummary changeSummary in preview)
 		{
-			string fileName = Path.GetFileName(item3.FilePath);
-			string value = ((item3.AmbiguousCount > 0) ? $" [yellow]({item3.AmbiguousCount} ambiguous)[/]" : "");
-			table.AddRow(Markup.Escape(fileName), $"{item3.ChangeCount}{value}", Markup.Escape(string.Join(", ", item3.Categories.Take(3))));
+			string fileName = Path.GetFileName(changeSummary.FilePath);
+			string ambiguousLabel = ((changeSummary.AmbiguousCount > 0) ? $" [yellow]({changeSummary.AmbiguousCount} ambiguous)[/]" : "");
+			table.AddRow(Markup.Escape(fileName), $"{changeSummary.ChangeCount}{ambiguousLabel}", Markup.Escape(string.Join(", ", changeSummary.Categories.Take(3))));
 		}
 		AnsiConsole.Write(table);
 		AnsiConsole.WriteLine();
@@ -142,10 +142,10 @@ public static class ConsoleUI
 			AnsiConsole.MarkupLine("[bold]Files to rename:[/]");
 			foreach (var fileRename in context.FileRenames)
 			{
-				string item = fileRename.OldPath;
-				string item2 = fileRename.NewPath;
-				string fileName2 = Path.GetFileName(item);
-				string fileName3 = Path.GetFileName(item2);
+				string oldPath = fileRename.OldPath;
+				string newPath = fileRename.NewPath;
+				string fileName2 = Path.GetFileName(oldPath);
+				string fileName3 = Path.GetFileName(newPath);
 				AnsiConsole.MarkupLine($"  [yellow]{Markup.Escape(fileName2)}[/] -> [green]{Markup.Escape(fileName3)}[/]");
 			}
 			AnsiConsole.WriteLine();
@@ -155,9 +155,9 @@ public static class ConsoleUI
 			return;
 		}
 		AnsiConsole.MarkupLine("[yellow]Some usages are ambiguous (multiple APIs have this symbol):[/]");
-		foreach (UsageMatch item4 in context.AmbiguousUsages.Take(5))
+		foreach (UsageMatch ambiguousUsage in context.AmbiguousUsages.Take(5))
 		{
-			AnsiConsole.MarkupLine($"  [dim]{Markup.Escape(Path.GetFileName(item4.FilePath))}:{item4.Line}[/] - Could be: {Markup.Escape(string.Join(", ", item4.PossibleApis ?? new List<string>()))}");
+			AnsiConsole.MarkupLine($"  [dim]{Markup.Escape(Path.GetFileName(ambiguousUsage.FilePath))}:{ambiguousUsage.Line}[/] - Could be: {Markup.Escape(string.Join(", ", ambiguousUsage.PossibleApis ?? new List<string>()))}");
 		}
 		if (context.AmbiguousUsages.Count > 5)
 		{
@@ -168,11 +168,11 @@ public static class ConsoleUI
 
 	public static void ShowDetailedUsages(RenameContext context)
 	{
-		List<Markup> list = (from u in context.Usages.Take(20)
+		List<Markup> usageMarkups = (from u in context.Usages.Take(20)
 			select new Markup($"[dim]{Markup.Escape(Path.GetFileName(u.FilePath))}:{u.Line}:{u.Column}[/] [blue]{Markup.Escape(u.MatchedText)}[/] -> [green]{Markup.Escape(u.ReplacementText)}[/]")).ToList();
-		if (list.Count > 0)
+		if (usageMarkups.Count > 0)
 		{
-			AnsiConsole.Write(new Panel(new Rows(list))
+			AnsiConsole.Write(new Panel(new Rows(usageMarkups))
 			{
 				Header = new PanelHeader("[bold]Usage Details[/]"),
 				Border = BoxBorder.Rounded
@@ -191,15 +191,15 @@ public static class ConsoleUI
 
 	public static bool ConfirmRename(RenameContext context)
 	{
-		int count = context.CertainUsages.Count;
-		int count2 = context.AmbiguousUsages.Count;
-		string text = $"Rename [yellow]{Markup.Escape(context.OldName)}[/] to [green]{Markup.Escape(context.NewName)}[/]? ({count} certain usages";
-		if (count2 > 0)
+		int certainCount = context.CertainUsages.Count;
+		int ambiguousCount = context.AmbiguousUsages.Count;
+		string confirmMessage = $"Rename [yellow]{Markup.Escape(context.OldName)}[/] to [green]{Markup.Escape(context.NewName)}[/]? ({certainCount} certain usages";
+		if (ambiguousCount > 0)
 		{
-			text += $", {count2} ambiguous - will be skipped";
+			confirmMessage += $", {ambiguousCount} ambiguous - will be skipped";
 		}
-		text += ")";
-		return AnsiConsole.Confirm(text);
+		confirmMessage += ")";
+		return AnsiConsole.Confirm(confirmMessage);
 	}
 
 	public static List<UsageMatch> ConfirmAmbiguousUsages(RenameContext context)
@@ -209,7 +209,7 @@ public static class ConsoleUI
 			return new List<UsageMatch>();
 		}
 		AnsiConsole.MarkupLine("[yellow]Review ambiguous usages:[/]");
-		List<UsageMatch> list = new List<UsageMatch>();
+		List<UsageMatch> confirmedUsages = new List<UsageMatch>();
 		foreach (UsageMatch ambiguousUsage in context.AmbiguousUsages)
 		{
 			AnsiConsole.WriteLine();
@@ -218,13 +218,13 @@ public static class ConsoleUI
 			AnsiConsole.MarkupLine("Possible APIs: " + Markup.Escape(string.Join(", ", ambiguousUsage.PossibleApis ?? new List<string>())));
 			if (AnsiConsole.Confirm("Rename this usage?", defaultValue: false))
 			{
-				list.Add(ambiguousUsage with
+				confirmedUsages.Add(ambiguousUsage with
 				{
 					IsAmbiguous = false
 				});
 			}
 		}
-		return list;
+		return confirmedUsages;
 	}
 
 	public static void ShowSuccess(RenameContext context)

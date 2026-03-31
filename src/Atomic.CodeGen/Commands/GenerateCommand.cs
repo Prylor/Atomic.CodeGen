@@ -20,22 +20,22 @@ public static class GenerateCommand
 	{
 		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, Directory.GetCurrentDirectory, "Path to project root");
 		Option<bool> option2 = new Option<bool>(new string[2] { "--verbose", "-v" }, () => false, "Enable verbose logging");
-		Command obj = new Command("generate", "Generate Entity API files") { option, option2 };
-		obj.SetHandler(async delegate(string projectPath, bool verbose)
+		Command command = new Command("generate", "Generate Entity API files") { option, option2 };
+		command.SetHandler(async delegate(string projectPath, bool verbose)
 		{
 			Logger.SetVerbose(verbose);
 			Logger.LogHeader("Atomic CodeGen - Generate");
 			Stopwatch stopwatch = Stopwatch.StartNew();
 			CodeGenConfig config = await ConfigLoader.LoadAsync(projectPath);
 			config.Verbose = verbose;
-			string text = FindSolutionFile(projectPath);
+			string solutionPath = FindSolutionFile(projectPath);
 			List<(string filePath, EntityAPIDefinition definition)> definitions = new List<(string, EntityAPIDefinition)>();
 			List<BehaviourDefinition> allBehaviours = new List<BehaviourDefinition>();
 			Dictionary<string, EntityDomainDefinition> domainDefinitions = new Dictionary<string, EntityDomainDefinition>();
-			if (text != null)
+			if (solutionPath != null)
 			{
 				Logger.LogInfo("Using Roslyn semantic analysis for type discovery...");
-				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(text, config.AnalyzerMode, config.IncludedProjects);
+				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath, config.AnalyzerMode, config.IncludedProjects);
 				DiscoveryResult discoveryResult = await discovery.DiscoverAllAsync(config.ExcludePaths);
 				definitions = (from d in discoveryResult.EntityApis
 					where d.IsValid
@@ -47,10 +47,10 @@ public static class GenerateCommand
 			else
 			{
 				Logger.LogInfo("No solution file found, using file scanning...");
-				List<string> list = new FileScanner(config).Scan();
-				Logger.LogInfo($"Scanning {list.Count} files...");
+				List<string> scannedFiles = new FileScanner(config).Scan();
+				Logger.LogInfo($"Scanning {scannedFiles.Count} files...");
 				EntityAPIParser parser = new EntityAPIParser();
-				foreach (string file in list)
+				foreach (string file in scannedFiles)
 				{
 					EntityAPIDefinition entityAPIDefinition = await parser.ParseFileAsync(file);
 					if (entityAPIDefinition != null && entityAPIDefinition.IsValid)
@@ -60,35 +60,35 @@ public static class GenerateCommand
 				}
 				Logger.LogInfo($"Found {definitions.Count} Entity API definitions");
 				BehaviourParser behaviourParser = new BehaviourParser();
-				List<string> list2 = FileScanner.FindFiles(config.GetAbsoluteProjectRoot(), "Assets/**/*.cs", config.ExcludePaths);
-				foreach (string item in list2)
+				List<string> behaviourFiles = FileScanner.FindFiles(config.GetAbsoluteProjectRoot(), "Assets/**/*.cs", config.ExcludePaths);
+				foreach (string behaviourFile in behaviourFiles)
 				{
-					allBehaviours.AddRange(await behaviourParser.ParseFileAsync(item));
+					allBehaviours.AddRange(await behaviourParser.ParseFileAsync(behaviourFile));
 				}
 				domainDefinitions = await EntityDomainScanner.ScanAsync(config);
 			}
 			foreach (var item2 in definitions)
 			{
 				EntityAPIDefinition definition = item2.definition;
-				List<BehaviourDefinition> list3 = allBehaviours.Where((BehaviourDefinition b) => b.LinkedApiTypeName == definition.ClassName || b.LinkedApiTypeName == definition.Namespace + "." + definition.ClassName).ToList();
-				definition.LinkedBehaviours = list3;
-				if (list3.Count > 0)
+				List<BehaviourDefinition> linkedBehaviours = allBehaviours.Where((BehaviourDefinition b) => b.LinkedApiTypeName == definition.ClassName || b.LinkedApiTypeName == definition.Namespace + "." + definition.ClassName).ToList();
+				definition.LinkedBehaviours = linkedBehaviours;
+				if (linkedBehaviours.Count > 0)
 				{
-					Logger.LogVerbose($"  {definition.ClassName}: {list3.Count} linked behaviour(s)");
+					Logger.LogVerbose($"  {definition.ClassName}: {linkedBehaviours.Count} linked behaviour(s)");
 				}
 			}
-			int num = definitions.Sum<(string, EntityAPIDefinition)>(((string filePath, EntityAPIDefinition definition) d) => d.definition.LinkedBehaviours.Count);
-			if (num > 0)
+			int totalLinkedBehaviours = definitions.Sum<(string, EntityAPIDefinition)>(((string filePath, EntityAPIDefinition definition) d) => d.definition.LinkedBehaviours.Count);
+			if (totalLinkedBehaviours > 0)
 			{
-				Logger.LogInfo($"Found {num} linked behaviour(s)");
+				Logger.LogInfo($"Found {totalLinkedBehaviours} linked behaviour(s)");
 			}
 			Logger.LogInfo($"Found {domainDefinitions.Count} Entity Domain definitions");
 			Logger.LogInfo("");
-			HashSet<string> hashSet = new HashSet<string>();
+			HashSet<string> expectedOutputPaths = new HashSet<string>();
 			foreach (var item3 in definitions)
 			{
 				string outputFilePath = item3.definition.GetOutputFilePath(config);
-				hashSet.Add(Path.GetFullPath(outputFilePath));
+				expectedOutputPaths.Add(Path.GetFullPath(outputFilePath));
 			}
 			string absoluteProjectRoot = config.GetAbsoluteProjectRoot();
 			foreach (KeyValuePair<string, EntityDomainDefinition> item4 in domainDefinitions)
@@ -96,14 +96,14 @@ public static class GenerateCommand
 				var (_, value) = item4;
 				foreach (string expectedFilePath in EntityDomainFileHelper.GetExpectedFilePaths(value, absoluteProjectRoot))
 				{
-					hashSet.Add(Path.GetFullPath(expectedFilePath));
+					expectedOutputPaths.Add(Path.GetFullPath(expectedFilePath));
 				}
 			}
 			Logger.LogInfo("Checking for orphaned generated files...");
-			int num2 = await OrphanedFilesCleaner.CleanOrphanedFilesAsync(config, config.ScanPaths, hashSet);
-			if (num2 > 0)
+			int orphanedCount = await OrphanedFilesCleaner.CleanOrphanedFilesAsync(config, config.ScanPaths, expectedOutputPaths);
+			if (orphanedCount > 0)
 			{
-				Logger.LogInfo($"Cleaned {num2} orphaned file(s)");
+				Logger.LogInfo($"Cleaned {orphanedCount} orphaned file(s)");
 			}
 			Logger.LogInfo("");
 			if (definitions.Count == 0 && domainDefinitions.Count == 0)
@@ -155,8 +155,8 @@ public static class GenerateCommand
 				stopwatch.Stop();
 				Logger.LogInfo("");
 				Logger.LogInfo("═══════════════════════════════════════════════════════");
-				int value2 = apiGeneratedCount + domainGeneratedCount;
-				int value3 = definitions.Count + domainDefinitions.Count;
+				int totalGenerated = apiGeneratedCount + domainGeneratedCount;
+				int totalDefinitions = definitions.Count + domainDefinitions.Count;
 				if (apiGeneratedCount > 0)
 				{
 					Logger.LogSuccess($"Entity API: {apiGeneratedCount}/{definitions.Count} files");
@@ -165,11 +165,11 @@ public static class GenerateCommand
 				{
 					Logger.LogSuccess($"Entity Domains: {domainGeneratedCount}/{domainDefinitions.Count} domains");
 				}
-				Logger.LogSuccess($"Total: {value2}/{value3} in {stopwatch.ElapsedMilliseconds}ms");
+				Logger.LogSuccess($"Total: {totalGenerated}/{totalDefinitions} in {stopwatch.ElapsedMilliseconds}ms");
 				Console.ResetColor();
 			}
 		}, option, option2);
-		return obj;
+		return command;
 	}
 
 	private static string? FindSolutionFile(string projectPath)

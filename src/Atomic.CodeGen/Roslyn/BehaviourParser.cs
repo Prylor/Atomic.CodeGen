@@ -40,26 +40,26 @@ public sealed class BehaviourParser
 
 	public List<BehaviourDefinition> ParseSource(string filePath, string sourceCode)
 	{
-		List<BehaviourDefinition> list = new List<BehaviourDefinition>();
+		List<BehaviourDefinition> behaviours = new List<BehaviourDefinition>();
 		CSharpParseOptions options = CreateParseOptionsWithSymbols(sourceCode);
 		SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sourceCode, options);
 		CompilationUnitSyntax root = syntaxTree.GetRoot() as CompilationUnitSyntax;
 		if (root == null)
 		{
-			return list;
+			return behaviours;
 		}
 		bool hasAtomicEntitiesUsing = root.Usings.Any((UsingDirectiveSyntax u) => u.Name?.ToString() == "Atomic.Entities");
-		foreach (ClassDeclarationSyntax item in from c in root.DescendantNodes().OfType<ClassDeclarationSyntax>()
+		foreach (ClassDeclarationSyntax classDecl in from c in root.DescendantNodes().OfType<ClassDeclarationSyntax>()
 			where HasLinkToAttribute(c, root)
 			select c)
 		{
-			BehaviourDefinition behaviourDefinition = ParseBehaviourClass(filePath, root, item, hasAtomicEntitiesUsing);
+			BehaviourDefinition behaviourDefinition = ParseBehaviourClass(filePath, root, classDecl, hasAtomicEntitiesUsing);
 			if (behaviourDefinition != null)
 			{
-				list.Add(behaviourDefinition);
+				behaviours.Add(behaviourDefinition);
 			}
 		}
-		return list;
+		return behaviours;
 	}
 
 	private BehaviourDefinition? ParseBehaviourClass(string filePath, CompilationUnitSyntax root, ClassDeclarationSyntax classDecl, bool hasAtomicEntitiesUsing)
@@ -69,22 +69,22 @@ public sealed class BehaviourParser
 		{
 			return null;
 		}
-		string text = ExtractLinkedApiTypeName(linkToAttribute);
-		if (string.IsNullOrEmpty(text))
+		string linkedApiTypeName = ExtractLinkedApiTypeName(linkToAttribute);
+		if (string.IsNullOrEmpty(linkedApiTypeName))
 		{
 			Logger.LogWarning("[LinkTo] attribute in " + filePath + " has no valid type argument");
 			return null;
 		}
-		string text2 = classDecl.Identifier.Text;
-		string text3 = GetNamespace(classDecl);
+		string className = classDecl.Identifier.Text;
+		string namespaceName = GetNamespace(classDecl);
 		List<(string, string)> constructorParameters = ExtractConstructorParameters(classDecl);
 		List<string> requiredImports = ImportExtractor.Extract(root, Array.Empty<string>());
 		BehaviourDefinition behaviourDefinition = new BehaviourDefinition
 		{
 			SourceFile = filePath,
-			LinkedApiTypeName = text,
-			Namespace = text3,
-			ClassName = text2,
+			LinkedApiTypeName = linkedApiTypeName,
+			Namespace = namespaceName,
+			ClassName = className,
 			ConstructorParameters = constructorParameters,
 			RequiredImports = requiredImports
 		};
@@ -93,11 +93,11 @@ public sealed class BehaviourParser
 		{
 			foreach (string error in behaviourDefinition.Errors)
 			{
-				Logger.LogError($"Behaviour {text2} in {filePath}: {error}");
+				Logger.LogError($"Behaviour {className} in {filePath}: {error}");
 			}
 			return null;
 		}
-		Logger.LogVerbose($"Parsed Behaviour: {text2} -> {text} from {filePath}");
+		Logger.LogVerbose($"Parsed Behaviour: {className} -> {linkedApiTypeName} from {filePath}");
 		return behaviourDefinition;
 	}
 
@@ -108,10 +108,10 @@ public sealed class BehaviourParser
 			definition.Errors.Add("Class must implement IEntityBehaviour or a derived interface (IEntityInit, IEntityTick, etc.)");
 			return;
 		}
-		List<string> list = classDecl.BaseList.Types.Select((BaseTypeSyntax t) => t.Type.ToString()).ToList();
-		if (!list.Any(IsValidBehaviourBase))
+		List<string> baseTypeNames = classDecl.BaseList.Types.Select((BaseTypeSyntax t) => t.Type.ToString()).ToList();
+		if (!baseTypeNames.Any(IsValidBehaviourBase))
 		{
-			Logger.LogVerbose($"Behaviour {definition.ClassName} uses non-standard base types: {string.Join(", ", list)}. " + "Assuming domain-specific interfaces that derive from IEntityBehaviour.");
+			Logger.LogVerbose($"Behaviour {definition.ClassName} uses non-standard base types: {string.Join(", ", baseTypeNames)}. " + "Assuming domain-specific interfaces that derive from IEntityBehaviour.");
 		}
 		if (classDecl.Modifiers.Any((SyntaxToken m) => m.IsKind(SyntaxKind.AbstractKeyword)))
 		{
@@ -130,9 +130,9 @@ public sealed class BehaviourParser
 			return true;
 		}
 		string[] genericBehaviourPrefixes = GenericBehaviourPrefixes;
-		foreach (string value in genericBehaviourPrefixes)
+		foreach (string prefix in genericBehaviourPrefixes)
 		{
-			if (baseType.StartsWith(value, StringComparison.Ordinal))
+			if (baseType.StartsWith(prefix, StringComparison.Ordinal))
 			{
 				return true;
 			}
@@ -142,35 +142,35 @@ public sealed class BehaviourParser
 
 	private List<(string Name, string Type)> ExtractConstructorParameters(ClassDeclarationSyntax classDecl)
 	{
-		List<(string, string)> list = new List<(string, string)>();
-		List<ConstructorDeclarationSyntax> list2 = classDecl.Members.OfType<ConstructorDeclarationSyntax>().ToList();
-		if (list2.Count == 0)
+		List<(string, string)> parameters = new List<(string, string)>();
+		List<ConstructorDeclarationSyntax> allConstructors = classDecl.Members.OfType<ConstructorDeclarationSyntax>().ToList();
+		if (allConstructors.Count == 0)
 		{
-			return list;
+			return parameters;
 		}
-		List<ConstructorDeclarationSyntax> list3 = list2.Where((ConstructorDeclarationSyntax c) => c.Modifiers.Any((SyntaxToken m) => m.IsKind(SyntaxKind.PublicKeyword))).ToList();
-		ConstructorDeclarationSyntax constructorDeclarationSyntax = null;
-		if (list3.Count > 0)
+		List<ConstructorDeclarationSyntax> publicConstructors = allConstructors.Where((ConstructorDeclarationSyntax c) => c.Modifiers.Any((SyntaxToken m) => m.IsKind(SyntaxKind.PublicKeyword))).ToList();
+		ConstructorDeclarationSyntax selectedConstructor = null;
+		if (publicConstructors.Count > 0)
 		{
-			constructorDeclarationSyntax = list3.OrderByDescending((ConstructorDeclarationSyntax c) => c.ParameterList.Parameters.Count).First();
+			selectedConstructor = publicConstructors.OrderByDescending((ConstructorDeclarationSyntax c) => c.ParameterList.Parameters.Count).First();
 		}
-		else if (list2.Count == 1)
+		else if (allConstructors.Count == 1)
 		{
-			constructorDeclarationSyntax = list2[0];
+			selectedConstructor = allConstructors[0];
 		}
-		if (constructorDeclarationSyntax == null || constructorDeclarationSyntax.ParameterList.Parameters.Count == 0)
+		if (selectedConstructor == null || selectedConstructor.ParameterList.Parameters.Count == 0)
 		{
-			return list;
+			return parameters;
 		}
-		SeparatedSyntaxList<ParameterSyntax>.Enumerator enumerator = constructorDeclarationSyntax.ParameterList.Parameters.GetEnumerator();
+		SeparatedSyntaxList<ParameterSyntax>.Enumerator enumerator = selectedConstructor.ParameterList.Parameters.GetEnumerator();
 		while (enumerator.MoveNext())
 		{
 			ParameterSyntax current = enumerator.Current;
-			string text = current.Identifier.Text;
-			string item = current.Type?.ToString() ?? "object";
-			list.Add((text, item));
+			string paramName = current.Identifier.Text;
+			string paramType = current.Type?.ToString() ?? "object";
+			parameters.Add((paramName, paramType));
 		}
-		return list;
+		return parameters;
 	}
 
 	private string ExtractLinkedApiTypeName(AttributeSyntax attribute)
@@ -195,18 +195,18 @@ public sealed class BehaviourParser
 
 	private static bool IsAtomicLinkToAttribute(AttributeSyntax attr, bool hasAtomicEntitiesUsing)
 	{
-		string text = attr.Name.ToString();
-		if (text == "Atomic.Entities.LinkTo" || text == "Atomic.Entities.LinkToAttribute")
+		string attributeName = attr.Name.ToString();
+		if (attributeName == "Atomic.Entities.LinkTo" || attributeName == "Atomic.Entities.LinkToAttribute")
 		{
 			return true;
 		}
-		bool flag = hasAtomicEntitiesUsing;
-		if (flag)
+		bool isLinkTo = hasAtomicEntitiesUsing;
+		if (isLinkTo)
 		{
-			bool flag2 = text == "LinkTo" || text == "LinkToAttribute";
-			flag = flag2;
+			bool isShortName = attributeName == "LinkTo" || attributeName == "LinkToAttribute";
+			isLinkTo = isShortName;
 		}
-		if (flag)
+		if (isLinkTo)
 		{
 			return true;
 		}
@@ -239,15 +239,15 @@ public sealed class BehaviourParser
 
 	private static CSharpParseOptions CreateParseOptionsWithSymbols(string sourceCode)
 	{
-		HashSet<string> hashSet = new HashSet<string>();
-		foreach (Match item in PreprocessorSymbolRegex.Matches(sourceCode))
+		HashSet<string> preprocessorSymbols = new HashSet<string>();
+		foreach (Match match in PreprocessorSymbolRegex.Matches(sourceCode))
 		{
-			string value = item.Groups[2].Value;
-			if (!string.IsNullOrEmpty(value))
+			string symbolName = match.Groups[2].Value;
+			if (!string.IsNullOrEmpty(symbolName))
 			{
-				hashSet.Add(value);
+				preprocessorSymbols.Add(symbolName);
 			}
 		}
-		return new CSharpParseOptions(LanguageVersion.Default, DocumentationMode.Parse, SourceCodeKind.Regular, hashSet);
+		return new CSharpParseOptions(LanguageVersion.Default, DocumentationMode.Parse, SourceCodeKind.Regular, preprocessorSymbols);
 	}
 }

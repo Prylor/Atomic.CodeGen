@@ -16,17 +16,17 @@ public static class WizardCommand
 	public static Command Create()
 	{
 		Option<string> option = new Option<string>(new string[2] { "--project", "-p" }, () => Directory.GetCurrentDirectory(), "Path to project root");
-		Command obj = new Command("wizard", "Interactive setup wizard - complete onboarding experience") { option };
-		obj.SetHandler(async delegate(string projectPath)
+		Command command = new Command("wizard", "Interactive setup wizard - complete onboarding experience") { option };
+		command.SetHandler(async delegate(string projectPath)
 		{
-			bool? flag = await CheckAtomicFrameworkAsync(projectPath);
-			if (flag != false && (!flag.HasValue || (ShowWelcome() && ShowFeatureEntityApi() && ShowFeatureBehaviours() && ShowFeatureEntityDomain() && ShowFeatureSmartRename())) && await ShowConfigurationWizard(projectPath) != null)
+			bool? frameworkCheckResult = await CheckAtomicFrameworkAsync(projectPath);
+			if (frameworkCheckResult != false && (!frameworkCheckResult.HasValue || (ShowWelcome() && ShowFeatureEntityApi() && ShowFeatureBehaviours() && ShowFeatureEntityDomain() && ShowFeatureSmartRename())) && await ShowConfigurationWizard(projectPath) != null)
 			{
 				ShowIdeSetup();
 				ShowComplete(projectPath);
 			}
 		}, option);
-		return obj;
+		return command;
 	}
 
 	private static async Task<bool?> CheckAtomicFrameworkAsync(string projectPath)
@@ -41,12 +41,12 @@ public static class WizardCommand
 			AnsiConsole.MarkupLine("[yellow]No .sln file found in project directory.[/]");
 			AnsiConsole.MarkupLine("[dim]Framework check skipped - will verify during code generation.[/]");
 			AnsiConsole.WriteLine();
-			string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue with wizard", "Skip to configuration", "Exit wizard"));
-			if (text.Contains("Exit"))
+			string selectedAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue with wizard", "Skip to configuration", "Exit wizard"));
+			if (selectedAction.Contains("Exit"))
 			{
 				return false;
 			}
-			if (text.Contains("Skip"))
+			if (selectedAction.Contains("Skip"))
 			{
 				return null;
 			}
@@ -70,12 +70,12 @@ public static class WizardCommand
 			AnsiConsole.MarkupLine("[yellow]Warning: Could not analyze solution: " + Markup.Escape(ex.Message) + "[/]");
 			AnsiConsole.MarkupLine("[dim]Framework check skipped.[/]");
 			AnsiConsole.WriteLine();
-			string text2 = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue with wizard", "Skip to configuration", "Exit wizard"));
-			if (text2.Contains("Exit"))
+			string errorAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue with wizard", "Skip to configuration", "Exit wizard"));
+			if (errorAction.Contains("Exit"))
 			{
 				return false;
 			}
-			if (text2.Contains("Skip"))
+			if (errorAction.Contains("Skip"))
 			{
 				return null;
 			}
@@ -88,12 +88,12 @@ public static class WizardCommand
 			AnsiConsole.MarkupLine("  [green][[LinkTo]][/] attribute found");
 			AnsiConsole.MarkupLine("  [green]EntityDomainBuilder[/] found");
 			AnsiConsole.WriteLine();
-			string text3 = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue with wizard", "Skip to configuration", "Exit wizard"));
-			if (text3.Contains("Exit"))
+			string frameworkFoundAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue with wizard", "Skip to configuration", "Exit wizard"));
+			if (frameworkFoundAction.Contains("Exit"))
 			{
 				return false;
 			}
-			if (text3.Contains("Skip"))
+			if (frameworkFoundAction.Contains("Skip"))
 			{
 				return null;
 			}
@@ -103,32 +103,32 @@ public static class WizardCommand
 		AnsiConsole.Write(new FigletText("Missing!").LeftJustified().Color(Color.Red));
 		AnsiConsole.Write(new Rule("[bold red]Atomic Framework Not Found[/]"));
 		AnsiConsole.WriteLine();
-		List<string> list = new List<string>();
+		List<string> missingComponents = new List<string>();
 		if (!hasEntityApiAttribute)
 		{
-			list.Add("[[EntityAPI]] attribute");
+			missingComponents.Add("[[EntityAPI]] attribute");
 		}
 		if (!hasLinkToAttribute)
 		{
-			list.Add("[[LinkTo]] attribute");
+			missingComponents.Add("[[LinkTo]] attribute");
 		}
 		if (!hasEntityDomainBuilder)
 		{
-			list.Add("EntityDomainBuilder class");
+			missingComponents.Add("EntityDomainBuilder class");
 		}
-		AnsiConsole.Write(new Panel(new Markup("[bold red]Atomic Framework is not installed in your project![/]\n\n[bold]Missing components:[/]\n" + string.Join("\n", list.Select((string m) => "  [red]x[/] " + m)) + "\n\n[bold]To use Atomic CodeGen, you need to install the Atomic Framework first.[/]\n\n[bold yellow]Installation:[/]\n\n  1. Visit: [cyan underline]https://github.com/StarKRE22/Atomic[/]\n  2. Follow the installation instructions in the README\n  3. Import the package into your project\n  4. Run this wizard again"))
+		AnsiConsole.Write(new Panel(new Markup("[bold red]Atomic Framework is not installed in your project![/]\n\n[bold]Missing components:[/]\n" + string.Join("\n", missingComponents.Select((string m) => "  [red]x[/] " + m)) + "\n\n[bold]To use Atomic CodeGen, you need to install the Atomic Framework first.[/]\n\n[bold yellow]Installation:[/]\n\n  1. Visit: [cyan underline]https://github.com/StarKRE22/Atomic[/]\n  2. Follow the installation instructions in the README\n  3. Import the package into your project\n  4. Run this wizard again"))
 		{
 			Header = new PanelHeader("[bold red]Framework Required[/]"),
 			Border = BoxBorder.Double,
 			Padding = new Padding(2, 1)
 		});
 		AnsiConsole.WriteLine();
-		string text4 = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue anyway (for exploration)", "Skip to configuration", "Exit wizard"));
-		if (text4.Contains("Exit"))
+		string missingAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue anyway (for exploration)", "Skip to configuration", "Exit wizard"));
+		if (missingAction.Contains("Exit"))
 		{
 			return false;
 		}
-		if (text4.Contains("Skip"))
+		if (missingAction.Contains("Skip"))
 		{
 			return null;
 		}
@@ -227,12 +227,12 @@ public static class WizardCommand
 		{
 			AnsiConsole.MarkupLine("[yellow]Configuration file found:[/] " + Markup.Escape(configPath));
 			AnsiConsole.WriteLine();
-			string text = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Use existing configuration", "Create new configuration", "Exit wizard"));
-			if (text.Contains("Exit"))
+			string configAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Use existing configuration", "Create new configuration", "Exit wizard"));
+			if (configAction.Contains("Exit"))
 			{
 				return null;
 			}
-			if (text.Contains("existing"))
+			if (configAction.Contains("existing"))
 			{
 				return await ConfigLoader.LoadAsync(projectPath);
 			}
@@ -280,19 +280,19 @@ public static class WizardCommand
 		};
 		AnsiConsole.WriteLine();
 		ShowParamDescription("Exclude Paths", "Folders and patterns to exclude from scanning.\nDefault excludes: obj, Library, Temp, and generated files.\n[dim]You can add custom exclusions if needed[/]");
-		string text2 = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Exclude paths configuration:").AddChoices("Use defaults (recommended)", "Add custom exclusions"));
+		string excludePathChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Exclude paths configuration:").AddChoices("Use defaults (recommended)", "Add custom exclusions"));
 		config.ExcludePaths = GetDefaultExcludePaths();
-		if (text2.Contains("custom"))
+		if (excludePathChoice.Contains("custom"))
 		{
 			AnsiConsole.MarkupLine("[dim]Enter additional paths to exclude (empty to finish):[/]");
 			while (true)
 			{
-				string text3 = AnsiConsole.Prompt(new TextPrompt<string>("[dim]Pattern:[/]").AllowEmpty());
-				if (string.IsNullOrWhiteSpace(text3))
+				string excludePattern = AnsiConsole.Prompt(new TextPrompt<string>("[dim]Pattern:[/]").AllowEmpty());
+				if (string.IsNullOrWhiteSpace(excludePattern))
 				{
 					break;
 				}
-				config.ExcludePaths.Add(text3);
+				config.ExcludePaths.Add(excludePattern);
 			}
 		}
 		AnsiConsole.WriteLine();
@@ -372,8 +372,8 @@ public static class WizardCommand
 			.AddColumn("[bold]Description[/]");
 		for (int i = 0; i < variables.Length; i++)
 		{
-			var (text, text2, text3) = variables[i];
-			table.AddRow(text, "[cyan]" + text2 + "[/]", text3);
+			var (variableName, expression, variableDescription) = variables[i];
+			table.AddRow(variableName, "[cyan]" + expression + "[/]", variableDescription);
 		}
 		AnsiConsole.Write(new Panel(table)
 		{
