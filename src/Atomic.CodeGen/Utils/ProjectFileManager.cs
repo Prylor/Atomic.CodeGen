@@ -62,7 +62,7 @@ public static class ProjectFileManager
 		{
 			XDocument xDocument = XDocument.Load(projectFilePath);
 			XElement root = xDocument.Root;
-			if (root != null && !(root.Name.LocalName != "Project"))
+			if (root != null && root.Name.LocalName == "Project")
 			{
 				string relativeTo = Path.GetDirectoryName(projectFilePath) ?? projectRoot;
 				string relativePath = Path.GetRelativePath(relativeTo, fileToRemove);

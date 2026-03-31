@@ -213,10 +213,10 @@ public static class ConfigureCommand
 		AnsiConsole.MarkupLine($"[green]Found {list.Count} projects[/]");
 		AnsiConsole.WriteLine();
 		HashSet<string> hashSet = ((currentProjects != null) ? new HashSet<string>(currentProjects, StringComparer.OrdinalIgnoreCase) : null);
-		bool num = hashSet == null || hashSet.Count == 0;
+		bool selectAll = hashSet == null || hashSet.Count == 0;
 		MultiSelectionPrompt<string> multiSelectionPrompt = new MultiSelectionPrompt<string>().Title("[bold]Select projects to include:[/]").PageSize(15).InstructionsText("[dim](Press [blue]<space>[/] to toggle, [green]<enter>[/] to confirm)[/]")
 			.AddChoices(list);
-		if (num)
+		if (selectAll)
 		{
 			foreach (string item in list)
 			{

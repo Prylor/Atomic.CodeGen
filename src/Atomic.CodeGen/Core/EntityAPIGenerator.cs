@@ -94,104 +94,61 @@ public sealed class EntityAPIGenerator
 
 	private string GenerateContent()
 	{
-		StringBuilder stringBuilder = new StringBuilder();
-		bool num = !string.IsNullOrWhiteSpace(_definition.Namespace);
-		string text = (num ? _indent : "");
+		StringBuilder sb = new StringBuilder();
+		bool hasNamespace = !string.IsNullOrWhiteSpace(_definition.Namespace);
+		string text = (hasNamespace ? _indent : "");
 		string indent = text + _indent;
-		AppendHeader(stringBuilder);
-		AppendUsings(stringBuilder);
-		stringBuilder.AppendLine();
-		StringBuilder stringBuilder2;
-		StringBuilder.AppendInterpolatedStringHandler handler;
-		if (num)
+		AppendHeader(sb);
+		AppendUsings(sb);
+		sb.AppendLine();
+		if (hasNamespace)
 		{
-			stringBuilder2 = stringBuilder;
-			StringBuilder stringBuilder3 = stringBuilder2;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder2);
-			handler.AppendLiteral("namespace ");
-			handler.AppendFormatted(_definition.Namespace);
-			stringBuilder3.AppendLine(ref handler);
-			stringBuilder.AppendLine("{");
+			sb.AppendLine($"namespace {_definition.Namespace}");
+			sb.AppendLine("{");
 		}
-		stringBuilder.AppendLine("#if UNITY_EDITOR");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder4 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(18, 1, stringBuilder2);
-		handler.AppendFormatted(text);
-		handler.AppendLiteral("[InitializeOnLoad]");
-		stringBuilder4.AppendLine(ref handler);
-		stringBuilder.AppendLine("#endif");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder5 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(28, 2, stringBuilder2);
-		handler.AppendFormatted(text);
-		handler.AppendLiteral("public static partial class ");
-		handler.AppendFormatted(_definition.ClassName);
-		stringBuilder5.AppendLine(ref handler);
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder6 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(1, 1, stringBuilder2);
-		handler.AppendFormatted(text);
-		handler.AppendLiteral("{");
-		stringBuilder6.AppendLine(ref handler);
+		sb.AppendLine("#if UNITY_EDITOR");
+		sb.AppendLine($"{text}[InitializeOnLoad]");
+		sb.AppendLine("#endif");
+		sb.AppendLine($"{text}public static partial class {_definition.ClassName}");
+		sb.AppendLine($"{text}{{");
 		if (_definition.Tags.Count > 0)
 		{
-			AppendTagFields(stringBuilder, indent);
+			AppendTagFields(sb, indent);
 		}
 		if (_definition.Values.Count > 0)
 		{
-			AppendValueFields(stringBuilder, indent);
+			AppendValueFields(sb, indent);
 		}
-		AppendStaticConstructor(stringBuilder, indent);
+		AppendStaticConstructor(sb, indent);
 		if (_definition.Tags.Count > 0)
 		{
-			AppendTagExtensions(stringBuilder, indent);
+			AppendTagExtensions(sb, indent);
 		}
 		if (_definition.Values.Count > 0)
 		{
-			AppendValueExtensions(stringBuilder, indent);
+			AppendValueExtensions(sb, indent);
 		}
 		if (_definition.LinkedBehaviours.Count > 0)
 		{
-			AppendBehaviourExtensions(stringBuilder, indent);
+			AppendBehaviourExtensions(sb, indent);
 		}
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder7 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(1, 1, stringBuilder2);
-		handler.AppendFormatted(text);
-		handler.AppendLiteral("}");
-		stringBuilder7.AppendLine(ref handler);
-		if (num)
+		sb.AppendLine($"{text}}}");
+		if (hasNamespace)
 		{
-			stringBuilder.AppendLine("}");
+			sb.AppendLine("}");
 		}
-		return stringBuilder.ToString();
+		return sb.ToString();
 	}
 
 	private void AppendHeader(StringBuilder sb)
 	{
 		sb.AppendLine("/**");
 		sb.AppendLine(" * Code generation. Don't modify!");
-		StringBuilder stringBuilder = sb;
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(19, 1, stringBuilder);
-		handler.AppendLiteral(" * Generated from: ");
-		handler.AppendFormatted(Path.GetFileName(_definition.SourceFile));
-		stringBuilder2.AppendLine(ref handler);
-		stringBuilder = sb;
-		StringBuilder stringBuilder3 = stringBuilder;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(21, 1, stringBuilder);
-		handler.AppendLiteral(" * Source file path: ");
-		handler.AppendFormatted(_definition.SourceFile);
-		stringBuilder3.AppendLine(ref handler);
+		sb.AppendLine($" * Generated from: {Path.GetFileName(_definition.SourceFile)}");
+		sb.AppendLine($" * Source file path: {_definition.SourceFile}");
 		if (_config.IncludeTimestamp)
 		{
-			stringBuilder = sb;
-			StringBuilder stringBuilder4 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(17, 1, stringBuilder);
-			handler.AppendLiteral(" * Generated at: ");
-			handler.AppendFormatted(DateTime.Now, "yyyy-MM-dd HH:mm:ss");
-			stringBuilder4.AppendLine(ref handler);
+			sb.AppendLine($" * Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
 		}
 		if (_config.TrackOrphans)
 		{
@@ -216,13 +173,7 @@ public sealed class EntityAPIGenerator
 		{
 			if (!string.IsNullOrWhiteSpace(import))
 			{
-				StringBuilder stringBuilder = sb;
-				StringBuilder stringBuilder2 = stringBuilder;
-				StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(7, 1, stringBuilder);
-				handler.AppendLiteral("using ");
-				handler.AppendFormatted(import);
-				handler.AppendLiteral(";");
-				stringBuilder2.AppendLine(ref handler);
+				sb.AppendLine($"using {import};");
 			}
 		}
 		foreach (string item in from ns in (from b in _definition.LinkedBehaviours
@@ -231,13 +182,7 @@ public sealed class EntityAPIGenerator
 			where ns != _definition.Namespace && !_definition.Imports.Contains(ns)
 			select ns)
 		{
-			StringBuilder stringBuilder = sb;
-			StringBuilder stringBuilder3 = stringBuilder;
-			StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(7, 1, stringBuilder);
-			handler.AppendLiteral("using ");
-			handler.AppendFormatted(item);
-			handler.AppendLiteral(";");
-			stringBuilder3.AppendLine(ref handler);
+			sb.AppendLine($"using {item};");
 		}
 		foreach (string item2 in from imp in _definition.LinkedBehaviours.SelectMany((BehaviourDefinition b) => b.RequiredImports).Distinct()
 			where imp != _definition.Namespace && !_definition.Imports.Contains(imp)
@@ -245,13 +190,7 @@ public sealed class EntityAPIGenerator
 		{
 			if (!string.IsNullOrWhiteSpace(item2))
 			{
-				StringBuilder stringBuilder = sb;
-				StringBuilder stringBuilder4 = stringBuilder;
-				StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(7, 1, stringBuilder);
-				handler.AppendLiteral("using ");
-				handler.AppendFormatted(item2);
-				handler.AppendLiteral(";");
-				stringBuilder4.AppendLine(ref handler);
+				sb.AppendLine($"using {item2};");
 			}
 		}
 	}
@@ -259,49 +198,24 @@ public sealed class EntityAPIGenerator
 	private void AppendTagFields(StringBuilder sb, string indent)
 	{
 		sb.AppendLine();
-		StringBuilder stringBuilder = sb;
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(7, 1, stringBuilder);
-		handler.AppendFormatted(indent);
-		handler.AppendLiteral("///Tags");
-		stringBuilder2.AppendLine(ref handler);
+		sb.AppendLine($"{indent}///Tags");
 		foreach (string tag in _definition.Tags)
 		{
-			stringBuilder = sb;
-			StringBuilder stringBuilder3 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(28, 2, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static readonly int ");
-			handler.AppendFormatted(tag);
-			handler.AppendLiteral(";");
-			stringBuilder3.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static readonly int {tag};");
 		}
 	}
 
 	private void AppendValueFields(StringBuilder sb, string indent)
 	{
 		sb.AppendLine();
-		StringBuilder stringBuilder = sb;
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(9, 1, stringBuilder);
-		handler.AppendFormatted(indent);
-		handler.AppendLiteral("///Values");
-		stringBuilder2.AppendLine(ref handler);
+		sb.AppendLine($"{indent}///Values");
 		foreach (KeyValuePair<string, string> value4 in _definition.Values)
 		{
 			value4.Deconstruct(out var key, out var value);
 			string value2 = key;
 			string text = value;
 			string value3 = (IsObjectType(text) ? "" : (" // " + text));
-			stringBuilder = sb;
-			StringBuilder stringBuilder3 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(28, 3, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static readonly int ");
-			handler.AppendFormatted(value2);
-			handler.AppendLiteral(";");
-			handler.AppendFormatted(value3);
-			stringBuilder3.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static readonly int {value2};{value3}");
 		}
 	}
 
@@ -309,39 +223,14 @@ public sealed class EntityAPIGenerator
 	{
 		string value = indent + _indent;
 		sb.AppendLine();
-		StringBuilder stringBuilder = sb;
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(9, 2, stringBuilder);
-		handler.AppendFormatted(indent);
-		handler.AppendLiteral("static ");
-		handler.AppendFormatted(_definition.ClassName);
-		handler.AppendLiteral("()");
-		stringBuilder2.AppendLine(ref handler);
-		stringBuilder = sb;
-		StringBuilder stringBuilder3 = stringBuilder;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(1, 1, stringBuilder);
-		handler.AppendFormatted(indent);
-		handler.AppendLiteral("{");
-		stringBuilder3.AppendLine(ref handler);
+		sb.AppendLine($"{indent}static {_definition.ClassName}()");
+		sb.AppendLine($"{indent}{{");
 		if (_definition.Tags.Count > 0)
 		{
-			stringBuilder = sb;
-			StringBuilder stringBuilder4 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(6, 1, stringBuilder);
-			handler.AppendFormatted(value);
-			handler.AppendLiteral("//Tags");
-			stringBuilder4.AppendLine(ref handler);
+			sb.AppendLine($"{value}//Tags");
 			foreach (string tag in _definition.Tags)
 			{
-				stringBuilder = sb;
-				StringBuilder stringBuilder5 = stringBuilder;
-				handler = new StringBuilder.AppendInterpolatedStringHandler(22, 3, stringBuilder);
-				handler.AppendFormatted(value);
-				handler.AppendFormatted(tag);
-				handler.AppendLiteral(" = NameToId(nameof(");
-				handler.AppendFormatted(tag);
-				handler.AppendLiteral("));");
-				stringBuilder5.AppendLine(ref handler);
+				sb.AppendLine($"{value}{tag} = NameToId(nameof({tag}));");
 			}
 		}
 		if (_definition.Values.Count > 0)
@@ -350,116 +239,37 @@ public sealed class EntityAPIGenerator
 			{
 				sb.AppendLine();
 			}
-			stringBuilder = sb;
-			StringBuilder stringBuilder6 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(8, 1, stringBuilder);
-			handler.AppendFormatted(value);
-			handler.AppendLiteral("//Values");
-			stringBuilder6.AppendLine(ref handler);
+			sb.AppendLine($"{value}//Values");
 			foreach (KeyValuePair<string, string> value4 in _definition.Values)
 			{
 				value4.Deconstruct(out var key, out var _);
 				string value3 = key;
-				stringBuilder = sb;
-				StringBuilder stringBuilder7 = stringBuilder;
-				handler = new StringBuilder.AppendInterpolatedStringHandler(22, 3, stringBuilder);
-				handler.AppendFormatted(value);
-				handler.AppendFormatted(value3);
-				handler.AppendLiteral(" = NameToId(nameof(");
-				handler.AppendFormatted(value3);
-				handler.AppendLiteral("));");
-				stringBuilder7.AppendLine(ref handler);
+				sb.AppendLine($"{value}{value3} = NameToId(nameof({value3}));");
 			}
 		}
-		stringBuilder = sb;
-		StringBuilder stringBuilder8 = stringBuilder;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(1, 1, stringBuilder);
-		handler.AppendFormatted(indent);
-		handler.AppendLiteral("}");
-		stringBuilder8.AppendLine(ref handler);
+		sb.AppendLine($"{indent}}}");
 	}
 
 	private void AppendTagExtensions(StringBuilder sb, string indent)
 	{
 		sb.AppendLine();
 		sb.AppendLine();
-		StringBuilder stringBuilder = sb;
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(17, 1, stringBuilder);
-		handler.AppendFormatted(indent);
-		handler.AppendLiteral("///Tag Extensions");
-		stringBuilder2.AppendLine(ref handler);
+		sb.AppendLine($"{indent}///Tag Extensions");
 		foreach (string tag in _definition.Tags)
 		{
 			sb.AppendLine();
-			stringBuilder = sb;
-			StringBuilder stringBuilder3 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(8, 2, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("#region ");
-			handler.AppendFormatted(tag);
-			stringBuilder3.AppendLine(ref handler);
+			sb.AppendLine($"{indent}#region {tag}");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder4 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(47, 6, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static bool Has");
-			handler.AppendFormatted(tag);
-			handler.AppendLiteral("Tag(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(") => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".HasTag(");
-			handler.AppendFormatted(tag);
-			handler.AppendLiteral(");");
-			stringBuilder4.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static bool Has{tag}Tag(this {_definition.EntityType} entity) => entity.HasTag({tag});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder5 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(47, 6, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static bool Add");
-			handler.AppendFormatted(tag);
-			handler.AppendLiteral("Tag(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(") => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".AddTag(");
-			handler.AppendFormatted(tag);
-			handler.AppendLiteral(");");
-			stringBuilder5.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static bool Add{tag}Tag(this {_definition.EntityType} entity) => entity.AddTag({tag});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder6 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(47, 6, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static bool Del");
-			handler.AppendFormatted(tag);
-			handler.AppendLiteral("Tag(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(") => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".DelTag(");
-			handler.AppendFormatted(tag);
-			handler.AppendLiteral(");");
-			stringBuilder6.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static bool Del{tag}Tag(this {_definition.EntityType} entity) => entity.DelTag({tag});");
 			sb.AppendLine();
-			stringBuilder = sb;
-			StringBuilder stringBuilder7 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("#endregion");
-			stringBuilder7.AppendLine(ref handler);
+			sb.AppendLine($"{indent}#endregion");
 		}
 	}
 
@@ -467,181 +277,38 @@ public sealed class EntityAPIGenerator
 	{
 		sb.AppendLine();
 		sb.AppendLine();
-		StringBuilder stringBuilder = sb;
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(19, 1, stringBuilder);
-		handler.AppendFormatted(indent);
-		handler.AppendLiteral("///Value Extensions");
-		stringBuilder2.AppendLine(ref handler);
+		sb.AppendLine($"{indent}///Value Extensions");
 		foreach (var (value, value2) in _definition.Values)
 		{
 			sb.AppendLine();
-			stringBuilder = sb;
-			StringBuilder stringBuilder3 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(8, 2, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("#region ");
-			handler.AppendFormatted(value);
-			stringBuilder3.AppendLine(ref handler);
+			sb.AppendLine($"{indent}#region {value}");
 			sb.AppendLine();
 			string value3 = (_definition.UnsafeAccess ? "Unsafe" : "");
 			string value4 = (_definition.UnsafeAccess ? "ref " : "");
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder4 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(44, 9, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static ");
-			handler.AppendFormatted(value2);
-			handler.AppendLiteral(" Get");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(") => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".GetValue");
-			handler.AppendFormatted(value3);
-			handler.AppendLiteral("<");
-			handler.AppendFormatted(value2);
-			handler.AppendLiteral(">(");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral(");");
-			stringBuilder4.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static {value2} Get{value}(this {_definition.EntityType} entity) => entity.GetValue{value3}<{value2}>({value});");
 			if (_definition.UnsafeAccess)
 			{
 				sb.AppendLine();
-				stringBuilder = sb;
-				StringBuilder stringBuilder5 = stringBuilder;
-				handler = new StringBuilder.AppendInterpolatedStringHandler(44, 11, stringBuilder);
-				handler.AppendFormatted(indent);
-				handler.AppendLiteral("public static ");
-				handler.AppendFormatted(value4);
-				handler.AppendFormatted(value2);
-				handler.AppendLiteral(" Ref");
-				handler.AppendFormatted(value);
-				handler.AppendLiteral("(this ");
-				handler.AppendFormatted(_definition.EntityType);
-				handler.AppendLiteral(" ");
-				handler.AppendFormatted("entity");
-				handler.AppendLiteral(") => ");
-				handler.AppendFormatted(value4);
-				handler.AppendFormatted("entity");
-				handler.AppendLiteral(".GetValue");
-				handler.AppendFormatted(value3);
-				handler.AppendLiteral("<");
-				handler.AppendFormatted(value2);
-				handler.AppendLiteral(">(");
-				handler.AppendFormatted(value);
-				handler.AppendLiteral(");");
-				stringBuilder5.AppendLine(ref handler);
+				sb.AppendLine($"{indent}public static {value4}{value2} Ref{value}(this {_definition.EntityType} entity) => {value4}entity.GetValue{value3}<{value2}>({value});");
 			}
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder6 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(75, 8, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static bool TryGet");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(", out ");
-			handler.AppendFormatted(value2);
-			handler.AppendLiteral(" value) => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".TryGetValue");
-			handler.AppendFormatted(value3);
-			handler.AppendLiteral("(");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral(", out value);");
-			stringBuilder6.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static bool TryGet{value}(this {_definition.EntityType} entity, out {value2} value) => entity.TryGetValue{value3}({value}, out value);");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder7 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(61, 7, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static void Add");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(", ");
-			handler.AppendFormatted(value2);
-			handler.AppendLiteral(" value) => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".AddValue(");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral(", value);");
-			stringBuilder7.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static void Add{value}(this {_definition.EntityType} entity, {value2} value) => entity.AddValue({value}, value);");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder8 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(46, 6, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static bool Has");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(") => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".HasValue(");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral(");");
-			stringBuilder8.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static bool Has{value}(this {_definition.EntityType} entity) => entity.HasValue({value});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder9 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(46, 6, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static bool Del");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(") => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".DelValue(");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral(");");
-			stringBuilder9.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static bool Del{value}(this {_definition.EntityType} entity) => entity.DelValue({value});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder10 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(61, 7, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static void Set");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(", ");
-			handler.AppendFormatted(value2);
-			handler.AppendLiteral(" value) => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".SetValue(");
-			handler.AppendFormatted(value);
-			handler.AppendLiteral(", value);");
-			stringBuilder10.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static void Set{value}(this {_definition.EntityType} entity, {value2} value) => entity.SetValue({value}, value);");
 			sb.AppendLine();
-			stringBuilder = sb;
-			StringBuilder stringBuilder11 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("#endregion");
-			stringBuilder11.AppendLine(ref handler);
+			sb.AppendLine($"{indent}#endregion");
 		}
 	}
 
@@ -649,150 +316,38 @@ public sealed class EntityAPIGenerator
 	{
 		sb.AppendLine();
 		sb.AppendLine();
-		StringBuilder stringBuilder = sb;
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(23, 1, stringBuilder);
-		handler.AppendFormatted(indent);
-		handler.AppendLiteral("///Behaviour Extensions");
-		stringBuilder2.AppendLine(ref handler);
+		sb.AppendLine($"{indent}///Behaviour Extensions");
 		foreach (BehaviourDefinition linkedBehaviour in _definition.LinkedBehaviours)
 		{
 			string className = linkedBehaviour.ClassName;
 			sb.AppendLine();
-			stringBuilder = sb;
-			StringBuilder stringBuilder3 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(8, 2, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("#region ");
-			handler.AppendFormatted(className);
-			stringBuilder3.AppendLine(ref handler);
+			sb.AppendLine($"{indent}#region {className}");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder4 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(52, 6, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static bool Has");
-			handler.AppendFormatted(className);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(") => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".HasBehaviour<");
-			handler.AppendFormatted(className);
-			handler.AppendLiteral(">();");
-			stringBuilder4.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static bool Has{className}(this {_definition.EntityType} entity) => entity.HasBehaviour<{className}>();");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder5 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(48, 7, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static ");
-			handler.AppendFormatted(className);
-			handler.AppendLiteral(" Get");
-			handler.AppendFormatted(className);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(") => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".GetBehaviour<");
-			handler.AppendFormatted(className);
-			handler.AppendLiteral(">();");
-			stringBuilder5.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static {className} Get{className}(this {_definition.EntityType} entity) => entity.GetBehaviour<{className}>();");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder6 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(85, 6, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static bool TryGet");
-			handler.AppendFormatted(className);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(", out ");
-			handler.AppendFormatted(className);
-			handler.AppendLiteral(" behaviour) => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".TryGetBehaviour(out behaviour);");
-			stringBuilder6.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static bool TryGet{className}(this {_definition.EntityType} entity, out {className} behaviour) => entity.TryGetBehaviour(out behaviour);");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
 			if (linkedBehaviour.ConstructorParameters.Count == 0)
 			{
-				stringBuilder = sb;
-				StringBuilder stringBuilder7 = stringBuilder;
-				handler = new StringBuilder.AppendInterpolatedStringHandler(56, 6, stringBuilder);
-				handler.AppendFormatted(indent);
-				handler.AppendLiteral("public static void Add");
-				handler.AppendFormatted(className);
-				handler.AppendLiteral("(this ");
-				handler.AppendFormatted(_definition.EntityType);
-				handler.AppendLiteral(" ");
-				handler.AppendFormatted("entity");
-				handler.AppendLiteral(") => ");
-				handler.AppendFormatted("entity");
-				handler.AppendLiteral(".AddBehaviour(new ");
-				handler.AppendFormatted(className);
-				handler.AppendLiteral("());");
-				stringBuilder7.AppendLine(ref handler);
+				sb.AppendLine($"{indent}public static void Add{className}(this {_definition.EntityType} entity) => entity.AddBehaviour(new {className}());");
 			}
 			else
 			{
 				string value = string.Join(", ", linkedBehaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Type + " " + p.Name));
 				string value2 = string.Join(", ", linkedBehaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Name));
-				stringBuilder = sb;
-				StringBuilder stringBuilder8 = stringBuilder;
-				handler = new StringBuilder.AppendInterpolatedStringHandler(58, 8, stringBuilder);
-				handler.AppendFormatted(indent);
-				handler.AppendLiteral("public static void Add");
-				handler.AppendFormatted(className);
-				handler.AppendLiteral("(this ");
-				handler.AppendFormatted(_definition.EntityType);
-				handler.AppendLiteral(" ");
-				handler.AppendFormatted("entity");
-				handler.AppendLiteral(", ");
-				handler.AppendFormatted(value);
-				handler.AppendLiteral(") => ");
-				handler.AppendFormatted("entity");
-				handler.AppendLiteral(".AddBehaviour(new ");
-				handler.AppendFormatted(className);
-				handler.AppendLiteral("(");
-				handler.AppendFormatted(value2);
-				handler.AppendLiteral("));");
-				stringBuilder8.AppendLine(ref handler);
+				sb.AppendLine($"{indent}public static void Add{className}(this {_definition.EntityType} entity, {value}) => entity.AddBehaviour(new {className}({value2}));");
 			}
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			stringBuilder = sb;
-			StringBuilder stringBuilder9 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(52, 6, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("public static bool Del");
-			handler.AppendFormatted(className);
-			handler.AppendLiteral("(this ");
-			handler.AppendFormatted(_definition.EntityType);
-			handler.AppendLiteral(" ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(") => ");
-			handler.AppendFormatted("entity");
-			handler.AppendLiteral(".DelBehaviour<");
-			handler.AppendFormatted(className);
-			handler.AppendLiteral(">();");
-			stringBuilder9.AppendLine(ref handler);
+			sb.AppendLine($"{indent}public static bool Del{className}(this {_definition.EntityType} entity) => entity.DelBehaviour<{className}>();");
 			sb.AppendLine();
-			stringBuilder = sb;
-			StringBuilder stringBuilder10 = stringBuilder;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder);
-			handler.AppendFormatted(indent);
-			handler.AppendLiteral("#endregion");
-			stringBuilder10.AppendLine(ref handler);
+			sb.AppendLine($"{indent}#endregion");
 		}
 	}
 
@@ -800,22 +355,17 @@ public sealed class EntityAPIGenerator
 	{
 		if (_definition.AggressiveInlining)
 		{
-			StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(0, 2, sb);
-			handler.AppendFormatted(indent);
-			handler.AppendFormatted("[MethodImpl(MethodImplOptions.AggressiveInlining)]");
-			sb.AppendLine(ref handler);
+			sb.AppendLine($"{indent}{"[MethodImpl(MethodImplOptions.AggressiveInlining)]"}");
 		}
 	}
 
 	private static bool IsObjectType(string type)
 	{
-		bool flag = string.IsNullOrEmpty(type);
-		if (!flag)
+		if (string.IsNullOrEmpty(type))
 		{
-			bool flag2 = ((type == "object" || type == "Object") ? true : false);
-			flag = flag2;
+			return true;
 		}
-		return flag;
+		return type == "object" || type == "Object";
 	}
 
 	private async Task<bool> IsOurGeneratedFileAsync(string filePath)

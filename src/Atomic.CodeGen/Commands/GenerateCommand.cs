@@ -91,11 +91,9 @@ public static class GenerateCommand
 				hashSet.Add(Path.GetFullPath(outputFilePath));
 			}
 			string absoluteProjectRoot = config.GetAbsoluteProjectRoot();
-			string key;
-			EntityDomainDefinition value;
 			foreach (KeyValuePair<string, EntityDomainDefinition> item4 in domainDefinitions)
 			{
-				item4.Deconstruct(out key, out value);
+				var (_, value) = item4;
 				foreach (string expectedFilePath in EntityDomainFileHelper.GetExpectedFilePaths(value, absoluteProjectRoot))
 				{
 					hashSet.Add(Path.GetFullPath(expectedFilePath));
@@ -140,8 +138,7 @@ public static class GenerateCommand
 					Logger.LogInfo("");
 					foreach (KeyValuePair<string, EntityDomainDefinition> item6 in domainDefinitions)
 					{
-						item6.Deconstruct(out key, out value);
-						EntityDomainDefinition domainDef = value;
+						var (_, domainDef) = item6;
 						try
 						{
 							if (await new EntityDomainOrchestrator(domainDef, config).GenerateAsync())

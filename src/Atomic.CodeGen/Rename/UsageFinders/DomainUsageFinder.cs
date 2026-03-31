@@ -222,9 +222,9 @@ public sealed class DomainUsageFinder : IUsageFinder
 	{
 		if (!string.IsNullOrEmpty(domainNamespace))
 		{
-			bool num = Regex.IsMatch(content, "using\\s+" + Regex.Escape(domainNamespace) + "\\s*;");
+			bool hasDomainImport = Regex.IsMatch(content, "using\\s+" + Regex.Escape(domainNamespace) + "\\s*;");
 			bool flag = Regex.IsMatch(content, "namespace\\s+" + Regex.Escape(domainNamespace) + "\\b");
-			if (!num && !flag)
+			if (!hasDomainImport && !flag)
 			{
 				return false;
 			}

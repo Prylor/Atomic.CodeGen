@@ -48,25 +48,6 @@ atomic-codegen ide               Setup IDE integration (Rider)
 dotnet build
 ```
 
-## Publishing to NuGet
-
-```bash
-# Build & pack
-dotnet pack src/Atomic.CodeGen/Atomic.CodeGen.csproj -c Release
-
-# Publish (requires NUGET_API_KEY)
-dotnet nuget push src/Atomic.CodeGen/bin/Release/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
-```
-
-Or use the provided scripts:
-
-```powershell
-# PowerShell
-./scripts/publish-nuget.ps1 -ApiKey YOUR_API_KEY
-
-# Bash
-./scripts/publish-nuget.sh YOUR_API_KEY
-```
 
 ## License
 

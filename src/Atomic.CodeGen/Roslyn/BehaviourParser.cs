@@ -196,14 +196,14 @@ public sealed class BehaviourParser
 	private static bool IsAtomicLinkToAttribute(AttributeSyntax attr, bool hasAtomicEntitiesUsing)
 	{
 		string text = attr.Name.ToString();
-		if ((text == "Atomic.Entities.LinkTo" || text == "Atomic.Entities.LinkToAttribute") ? true : false)
+		if (text == "Atomic.Entities.LinkTo" || text == "Atomic.Entities.LinkToAttribute")
 		{
 			return true;
 		}
 		bool flag = hasAtomicEntitiesUsing;
 		if (flag)
 		{
-			bool flag2 = ((text == "LinkTo" || text == "LinkToAttribute") ? true : false);
+			bool flag2 = text == "LinkTo" || text == "LinkToAttribute";
 			flag = flag2;
 		}
 		if (flag)

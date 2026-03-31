@@ -105,14 +105,14 @@ public sealed class EntityAPIParser
 	private static bool IsAtomicEntityAPIAttribute(AttributeSyntax attr, bool hasAtomicEntitiesUsing)
 	{
 		string text = attr.Name.ToString();
-		if ((text == "Atomic.Entities.EntityAPI" || text == "Atomic.Entities.EntityAPIAttribute") ? true : false)
+		if (text == "Atomic.Entities.EntityAPI" || text == "Atomic.Entities.EntityAPIAttribute")
 		{
 			return true;
 		}
 		bool flag = hasAtomicEntitiesUsing;
 		if (flag)
 		{
-			bool flag2 = ((text == "EntityAPI" || text == "EntityAPIAttribute") ? true : false);
+			bool flag2 = text == "EntityAPI" || text == "EntityAPIAttribute";
 			flag = flag2;
 		}
 		if (flag)

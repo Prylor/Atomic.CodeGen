@@ -479,10 +479,10 @@ public sealed class SemanticUsageFinder
 				SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
 				foreach (ClassDeclarationSyntax item in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<ClassDeclarationSyntax>())
 				{
-					if (!(item.Identifier.Text != className))
+					if (item.Identifier.Text == className)
 					{
 						INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(item);
-						if (declaredSymbol != null && (string.IsNullOrEmpty(namespaceName) || !(declaredSymbol.ContainingNamespace?.ToDisplayString() != namespaceName)))
+						if (declaredSymbol != null && (string.IsNullOrEmpty(namespaceName) || declaredSymbol.ContainingNamespace?.ToDisplayString() == namespaceName))
 						{
 							return declaredSymbol;
 						}
@@ -507,10 +507,10 @@ public sealed class SemanticUsageFinder
 				SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
 				foreach (TypeDeclarationSyntax item in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>())
 				{
-					if (!(item.Identifier.Text != typeName))
+					if (item.Identifier.Text == typeName)
 					{
 						INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(item);
-						if (declaredSymbol != null && (string.IsNullOrEmpty(namespaceName) || !(declaredSymbol.ContainingNamespace?.ToDisplayString() != namespaceName)))
+						if (declaredSymbol != null && (string.IsNullOrEmpty(namespaceName) || declaredSymbol.ContainingNamespace?.ToDisplayString() == namespaceName))
 						{
 							return declaredSymbol;
 						}
@@ -545,7 +545,7 @@ public sealed class SemanticUsageFinder
 				SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
 				foreach (TypeDeclarationSyntax item in (await syntaxTree.GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>())
 				{
-					if (!(item.Identifier.Text != typeName))
+					if (item.Identifier.Text == typeName)
 					{
 						INamedTypeSymbol declaredSymbol = semanticModel.GetDeclaredSymbol(item);
 						if (declaredSymbol != null)

@@ -55,228 +55,132 @@ public static class EntityViewGenerators
 
 	private static string GenerateEntityViewContent(EntityDomainDefinition definition, CodeGenConfig config, string fileName)
 	{
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
-		stringBuilder.AppendLine();
-		stringBuilder.AppendLine("using Atomic.Entities;");
-		stringBuilder.AppendLine("using UnityEngine;");
+		StringBuilder sb = new StringBuilder();
+		sb.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
+		sb.AppendLine();
+		sb.AppendLine("using Atomic.Entities;");
+		sb.AppendLine("using UnityEngine;");
 		string[] imports = definition.GetImports();
 		foreach (string text in imports)
 		{
 			if (!string.IsNullOrWhiteSpace(text))
 			{
 				string text2 = text.Trim();
-				stringBuilder.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
 			}
 		}
-		stringBuilder.AppendLine();
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder3 = stringBuilder2;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder2);
-		handler.AppendLiteral("namespace ");
-		handler.AppendFormatted(definition.Namespace);
-		stringBuilder3.AppendLine(ref handler);
-		stringBuilder.AppendLine("{");
-		stringBuilder.AppendLine("    /// <summary>");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder4 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(94, 1, stringBuilder2);
-		handler.AppendLiteral("    /// A Unity <see cref=\"MonoBehaviour\"/> view component bound to an <see cref=\"I");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("\"/> entity.");
-		stringBuilder4.AppendLine(ref handler);
-		stringBuilder.AppendLine("    /// </summary>");
-		stringBuilder.AppendLine("    /// <remarks>");
-		stringBuilder.AppendLine("    /// This component provides visual representation and Unity-specific functionality for the entity.");
-		stringBuilder.AppendLine("    /// </remarks>");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder5 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(37, 2, stringBuilder2);
-		handler.AppendLiteral("    public class ");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("View : EntityView<I");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral(">");
-		stringBuilder5.AppendLine(ref handler);
-		stringBuilder.AppendLine("    {");
-		stringBuilder.AppendLine("    }");
-		stringBuilder.AppendLine("}");
-		return stringBuilder.ToString();
+		sb.AppendLine();
+		sb.AppendLine($"namespace {definition.Namespace}");
+		sb.AppendLine("{");
+		sb.AppendLine("    /// <summary>");
+		sb.AppendLine($"    /// A Unity <see cref=\"MonoBehaviour\"/> view component bound to an <see cref=\"I{definition.EntityName}\"/> entity.");
+		sb.AppendLine("    /// </summary>");
+		sb.AppendLine("    /// <remarks>");
+		sb.AppendLine("    /// This component provides visual representation and Unity-specific functionality for the entity.");
+		sb.AppendLine("    /// </remarks>");
+		sb.AppendLine($"    public class {definition.EntityName}View : EntityView<I{definition.EntityName}>");
+		sb.AppendLine("    {");
+		sb.AppendLine("    }");
+		sb.AppendLine("}");
+		return sb.ToString();
 	}
 
 	private static string GenerateEntityViewCatalogContent(EntityDomainDefinition definition, CodeGenConfig config, string fileName)
 	{
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
-		stringBuilder.AppendLine();
-		stringBuilder.AppendLine("using Atomic.Entities;");
-		stringBuilder.AppendLine("using UnityEngine;");
+		StringBuilder sb = new StringBuilder();
+		sb.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
+		sb.AppendLine();
+		sb.AppendLine("using Atomic.Entities;");
+		sb.AppendLine("using UnityEngine;");
 		string[] imports = definition.GetImports();
 		foreach (string text in imports)
 		{
 			if (!string.IsNullOrWhiteSpace(text))
 			{
 				string text2 = text.Trim();
-				stringBuilder.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
 			}
 		}
-		stringBuilder.AppendLine();
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder3 = stringBuilder2;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder2);
-		handler.AppendLiteral("namespace ");
-		handler.AppendFormatted(definition.Namespace);
-		stringBuilder3.AppendLine(ref handler);
-		stringBuilder.AppendLine("{");
-		stringBuilder.AppendLine("    /// <summary>");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder4 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(108, 1, stringBuilder2);
-		handler.AppendLiteral("    /// A <see cref=\"ScriptableObject\"/> catalog that maps entity identifiers to <see cref=\"");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("View\"/> prefabs.");
-		stringBuilder4.AppendLine(ref handler);
-		stringBuilder.AppendLine("    /// </summary>");
-		stringBuilder.AppendLine("    /// <remarks>");
-		stringBuilder.AppendLine("    /// Use this catalog to define reusable view prefab mappings for different entity configurations.");
-		stringBuilder.AppendLine("    /// </remarks>");
+		sb.AppendLine();
+		sb.AppendLine($"namespace {definition.Namespace}");
+		sb.AppendLine("{");
+		sb.AppendLine("    /// <summary>");
+		sb.AppendLine($"    /// A <see cref=\"ScriptableObject\"/> catalog that maps entity identifiers to <see cref=\"{definition.EntityName}View\"/> prefabs.");
+		sb.AppendLine("    /// </summary>");
+		sb.AppendLine("    /// <remarks>");
+		sb.AppendLine("    /// Use this catalog to define reusable view prefab mappings for different entity configurations.");
+		sb.AppendLine("    /// </remarks>");
 		string value = definition.Namespace.Replace('.', '/');
-		stringBuilder.AppendLine("    [CreateAssetMenu(");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder5 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(33, 1, stringBuilder2);
-		handler.AppendLiteral("        fileName = \"");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("ViewCatalog\",");
-		stringBuilder5.AppendLine(ref handler);
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder6 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(37, 2, stringBuilder2);
-		handler.AppendLiteral("        menuName = \"");
-		handler.AppendFormatted(value);
-		handler.AppendLiteral("/New ");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("ViewCatalog\"");
-		stringBuilder6.AppendLine(ref handler);
-		stringBuilder.AppendLine("    )]");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder7 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(64, 3, stringBuilder2);
-		handler.AppendLiteral("    public sealed class ");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("ViewCatalog : EntityViewCatalog<I");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral(", ");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("View>");
-		stringBuilder7.AppendLine(ref handler);
-		stringBuilder.AppendLine("    {");
-		stringBuilder.AppendLine("    }");
-		stringBuilder.AppendLine("}");
-		return stringBuilder.ToString();
+		sb.AppendLine("    [CreateAssetMenu(");
+		sb.AppendLine($"        fileName = \"{definition.EntityName}ViewCatalog\",");
+		sb.AppendLine($"        menuName = \"{value}/New {definition.EntityName}ViewCatalog\"");
+		sb.AppendLine("    )]");
+		sb.AppendLine($"    public sealed class {definition.EntityName}ViewCatalog : EntityViewCatalog<I{definition.EntityName}, {definition.EntityName}View>");
+		sb.AppendLine("    {");
+		sb.AppendLine("    }");
+		sb.AppendLine("}");
+		return sb.ToString();
 	}
 
 	private static string GenerateEntityViewPoolContent(EntityDomainDefinition definition, CodeGenConfig config, string fileName)
 	{
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
-		stringBuilder.AppendLine();
-		stringBuilder.AppendLine("using Atomic.Entities;");
+		StringBuilder sb = new StringBuilder();
+		sb.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
+		sb.AppendLine();
+		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
 		foreach (string text in imports)
 		{
 			if (!string.IsNullOrWhiteSpace(text))
 			{
 				string text2 = text.Trim();
-				stringBuilder.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
 			}
 		}
-		stringBuilder.AppendLine();
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder3 = stringBuilder2;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder2);
-		handler.AppendLiteral("namespace ");
-		handler.AppendFormatted(definition.Namespace);
-		stringBuilder3.AppendLine(ref handler);
-		stringBuilder.AppendLine("{");
-		stringBuilder.AppendLine("    /// <summary>");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder4 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(57, 1, stringBuilder2);
-		handler.AppendLiteral("    /// A pool for managing <see cref=\"");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("View\"/> instances.");
-		stringBuilder4.AppendLine(ref handler);
-		stringBuilder.AppendLine("    /// </summary>");
-		stringBuilder.AppendLine("    /// <remarks>");
-		stringBuilder.AppendLine("    /// Use this pool to efficiently reuse view instances instead of constantly creating and destroying them.");
-		stringBuilder.AppendLine("    /// </remarks>");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder5 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(58, 3, stringBuilder2);
-		handler.AppendLiteral("    public sealed class ");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("ViewPool : EntityViewPool<I");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral(", ");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("View>");
-		stringBuilder5.AppendLine(ref handler);
-		stringBuilder.AppendLine("    {");
-		stringBuilder.AppendLine("    }");
-		stringBuilder.AppendLine("}");
-		return stringBuilder.ToString();
+		sb.AppendLine();
+		sb.AppendLine($"namespace {definition.Namespace}");
+		sb.AppendLine("{");
+		sb.AppendLine("    /// <summary>");
+		sb.AppendLine($"    /// A pool for managing <see cref=\"{definition.EntityName}View\"/> instances.");
+		sb.AppendLine("    /// </summary>");
+		sb.AppendLine("    /// <remarks>");
+		sb.AppendLine("    /// Use this pool to efficiently reuse view instances instead of constantly creating and destroying them.");
+		sb.AppendLine("    /// </remarks>");
+		sb.AppendLine($"    public sealed class {definition.EntityName}ViewPool : EntityViewPool<I{definition.EntityName}, {definition.EntityName}View>");
+		sb.AppendLine("    {");
+		sb.AppendLine("    }");
+		sb.AppendLine("}");
+		return sb.ToString();
 	}
 
 	private static string GenerateEntityCollectionViewContent(EntityDomainDefinition definition, CodeGenConfig config, string fileName)
 	{
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
-		stringBuilder.AppendLine();
-		stringBuilder.AppendLine("using Atomic.Entities;");
+		StringBuilder sb = new StringBuilder();
+		sb.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
+		sb.AppendLine();
+		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
 		foreach (string text in imports)
 		{
 			if (!string.IsNullOrWhiteSpace(text))
 			{
 				string text2 = text.Trim();
-				stringBuilder.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
 			}
 		}
-		stringBuilder.AppendLine();
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder3 = stringBuilder2;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder2);
-		handler.AppendLiteral("namespace ");
-		handler.AppendFormatted(definition.Namespace);
-		stringBuilder3.AppendLine(ref handler);
-		stringBuilder.AppendLine("{");
-		stringBuilder.AppendLine("    /// <summary>");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder4 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(85, 1, stringBuilder2);
-		handler.AppendLiteral("    /// A collection view manager for handling multiple <see cref=\"");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("View\"/> instances.");
-		stringBuilder4.AppendLine(ref handler);
-		stringBuilder.AppendLine("    /// </summary>");
-		stringBuilder.AppendLine("    /// <remarks>");
-		stringBuilder.AppendLine("    /// This component manages synchronization between a collection of entities and their corresponding views.");
-		stringBuilder.AppendLine("    /// </remarks>");
-		stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder5 = stringBuilder2;
-		handler = new StringBuilder.AppendInterpolatedStringHandler(70, 3, stringBuilder2);
-		handler.AppendLiteral("    public sealed class ");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("CollectionView : EntityCollectionView<I");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral(", ");
-		handler.AppendFormatted(definition.EntityName);
-		handler.AppendLiteral("View>");
-		stringBuilder5.AppendLine(ref handler);
-		stringBuilder.AppendLine("    {");
-		stringBuilder.AppendLine("    }");
-		stringBuilder.AppendLine("}");
-		return stringBuilder.ToString();
+		sb.AppendLine();
+		sb.AppendLine($"namespace {definition.Namespace}");
+		sb.AppendLine("{");
+		sb.AppendLine("    /// <summary>");
+		sb.AppendLine($"    /// A collection view manager for handling multiple <see cref=\"{definition.EntityName}View\"/> instances.");
+		sb.AppendLine("    /// </summary>");
+		sb.AppendLine("    /// <remarks>");
+		sb.AppendLine("    /// This component manages synchronization between a collection of entities and their corresponding views.");
+		sb.AppendLine("    /// </remarks>");
+		sb.AppendLine($"    public sealed class {definition.EntityName}CollectionView : EntityCollectionView<I{definition.EntityName}, {definition.EntityName}View>");
+		sb.AppendLine("    {");
+		sb.AppendLine("    }");
+		sb.AppendLine("}");
+		return sb.ToString();
 	}
 }

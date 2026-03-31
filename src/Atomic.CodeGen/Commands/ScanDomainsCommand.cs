@@ -51,13 +51,9 @@ public static class ScanDomainsCommand
 			{
 				Logger.LogSuccess($"Found {definitions.Count} EntityDomain definition(s):");
 				AnsiConsole.WriteLine();
-				string key;
-				EntityDomainDefinition value;
 				foreach (KeyValuePair<string, EntityDomainDefinition> item in definitions)
 				{
-					item.Deconstruct(out key, out value);
-					string path = key;
-					EntityDomainDefinition entityDomainDefinition = value;
+					var (path, entityDomainDefinition) = item;
 					Path.GetRelativePath(config.GetAbsoluteProjectRoot(), path);
 					AnsiConsole.Write(new Panel(BuildDomainInfo(entityDomainDefinition, config))
 					{
@@ -73,8 +69,7 @@ public static class ScanDomainsCommand
 					int generated = 0;
 					foreach (KeyValuePair<string, EntityDomainDefinition> item2 in definitions)
 					{
-						item2.Deconstruct(out key, out value);
-						EntityDomainDefinition definition = value;
+						var (_, definition) = item2;
 						try
 						{
 							if (await new EntityDomainOrchestrator(definition, config).GenerateAsync())

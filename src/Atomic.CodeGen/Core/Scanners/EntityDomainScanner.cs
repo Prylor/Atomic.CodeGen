@@ -270,7 +270,7 @@ public static class EntityDomainScanner
 		else
 		{
 			EntityMode mode = entityDomainDefinition.Mode;
-			bool flag2 = (uint)(mode - 2) <= 1u;
+			bool flag2 = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
 			generateProxy = flag2;
 		}
 		entityDomainDefinition2.GenerateProxy = generateProxy;
@@ -284,7 +284,7 @@ public static class EntityDomainScanner
 		else
 		{
 			EntityMode mode = entityDomainDefinition.Mode;
-			bool flag2 = (uint)(mode - 2) <= 1u;
+			bool flag2 = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
 			generateProxy = flag2;
 		}
 		entityDomainDefinition2.GenerateWorld = generateProxy;

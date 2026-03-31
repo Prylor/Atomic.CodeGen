@@ -30,71 +30,45 @@ public static class EntityBehaviourGenerator
 
 	private static string GenerateContent(EntityDomainDefinition definition, CodeGenConfig config, string fileName)
 	{
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
-		stringBuilder.AppendLine();
-		stringBuilder.AppendLine("using Atomic.Entities;");
+		StringBuilder sb = new StringBuilder();
+		sb.Append(EntityDomainFileHelper.GetFileHeader(definition, fileName, config));
+		sb.AppendLine();
+		sb.AppendLine("using Atomic.Entities;");
 		string[] imports = definition.GetImports();
 		foreach (string text in imports)
 		{
 			if (!string.IsNullOrWhiteSpace(text))
 			{
 				string text2 = text.Trim();
-				stringBuilder.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
+				sb.AppendLine(text2.StartsWith("using") ? text2 : ("using " + text2 + ";"));
 			}
 		}
-		stringBuilder.AppendLine();
-		StringBuilder stringBuilder2 = stringBuilder;
-		StringBuilder stringBuilder3 = stringBuilder2;
-		StringBuilder.AppendInterpolatedStringHandler handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder2);
-		handler.AppendLiteral("namespace ");
-		handler.AppendFormatted(definition.Namespace);
-		stringBuilder3.AppendLine(ref handler);
-		stringBuilder.AppendLine("{");
+		sb.AppendLine();
+		sb.AppendLine($"namespace {definition.Namespace}");
+		sb.AppendLine("{");
 		for (int j = 0; j < BaseInterfaces.Length; j++)
 		{
 			string value = string.Format(Summaries[j], definition.EntityName);
 			string text3 = string.Format(Remarks[j], definition.EntityName);
-			stringBuilder.AppendLine("    /// <summary>");
-			stringBuilder2 = stringBuilder;
-			StringBuilder stringBuilder4 = stringBuilder2;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(8, 1, stringBuilder2);
-			handler.AppendLiteral("    /// ");
-			handler.AppendFormatted(value);
-			stringBuilder4.AppendLine(ref handler);
-			stringBuilder.AppendLine("    /// </summary>");
-			stringBuilder.AppendLine("    /// <remarks>");
+			sb.AppendLine("    /// <summary>");
+			sb.AppendLine($"    /// {value}");
+			sb.AppendLine("    /// </summary>");
+			sb.AppendLine("    /// <remarks>");
 			imports = text3.Split('\n');
 			foreach (string value2 in imports)
 			{
-				stringBuilder2 = stringBuilder;
-				StringBuilder stringBuilder5 = stringBuilder2;
-				handler = new StringBuilder.AppendInterpolatedStringHandler(8, 1, stringBuilder2);
-				handler.AppendLiteral("    /// ");
-				handler.AppendFormatted(value2);
-				stringBuilder5.AppendLine(ref handler);
+				sb.AppendLine($"    /// {value2}");
 			}
-			stringBuilder.AppendLine("    /// </remarks>");
-			stringBuilder2 = stringBuilder;
-			StringBuilder stringBuilder6 = stringBuilder2;
-			handler = new StringBuilder.AppendInterpolatedStringHandler(26, 4, stringBuilder2);
-			handler.AppendLiteral("    public interface ");
-			handler.AppendFormatted(definition.EntityName);
-			handler.AppendFormatted(EventNames[j]);
-			handler.AppendLiteral(" : ");
-			handler.AppendFormatted(BaseInterfaces[j]);
-			handler.AppendLiteral("<");
-			handler.AppendFormatted(definition.EntityName);
-			handler.AppendLiteral(">");
-			stringBuilder6.AppendLine(ref handler);
-			stringBuilder.AppendLine("    {");
-			stringBuilder.AppendLine("    }");
+			sb.AppendLine("    /// </remarks>");
+			sb.AppendLine($"    public interface {definition.EntityName}{EventNames[j]} : {BaseInterfaces[j]}<{definition.EntityName}>");
+			sb.AppendLine("    {");
+			sb.AppendLine("    }");
 			if (j < BaseInterfaces.Length - 1)
 			{
-				stringBuilder.AppendLine();
+				sb.AppendLine();
 			}
 		}
-		stringBuilder.AppendLine("}");
-		return stringBuilder.ToString();
+		sb.AppendLine("}");
+		return sb.ToString();
 	}
 }

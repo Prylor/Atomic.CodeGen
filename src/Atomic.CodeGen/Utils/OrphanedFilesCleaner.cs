@@ -33,7 +33,6 @@ public static class OrphanedFilesCleaner
 
 	private static async Task<bool> IsOrphanedAsync(string generatedFilePath, string projectRoot, HashSet<string>? expectedGeneratedFiles)
 	{
-		_ = 1;
 		try
 		{
 			if (!File.Exists(generatedFilePath))
@@ -69,9 +68,9 @@ public static class OrphanedFilesCleaner
 			{
 				return true;
 			}
-			bool num = text2.Contains("[EntityAPI") || text2.Contains("EntityAPIAttribute");
+			bool isEntityApi = text2.Contains("[EntityAPI") || text2.Contains("EntityAPIAttribute");
 			bool flag = text2.Contains("IEntityDomain") || text2.Contains("EntityDomainBuilder");
-			if (!num && !flag)
+			if (!isEntityApi && !flag)
 			{
 				return true;
 			}

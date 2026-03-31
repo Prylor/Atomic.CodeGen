@@ -311,12 +311,12 @@ public sealed class RenameOrchestrator
 		}
 		try
 		{
-			bool num = await new EntityAPIGenerator(definition, _config).GenerateAsync();
-			if (num)
+			bool generated = await new EntityAPIGenerator(definition, _config).GenerateAsync();
+			if (generated)
 			{
 				Logger.LogSuccess("Regenerated " + definition.ClassName);
 			}
-			return num;
+			return generated;
 		}
 		catch (Exception ex)
 		{
@@ -327,7 +327,6 @@ public sealed class RenameOrchestrator
 
 	private async Task<bool> RegenerateDomainAsync(RenameContext context)
 	{
-		_ = 1;
 		try
 		{
 			EntityDomainDefinition domainDef = await EntityDomainScanner.ParseFileAsync(context.SourceFilePath, _config);
@@ -340,12 +339,12 @@ public sealed class RenameOrchestrator
 			{
 				Logger.LogWarning($"Domain EntityName is '{domainDef.EntityName}', expected '{context.NewName}'");
 			}
-			bool num = await new EntityDomainOrchestrator(domainDef, _config).GenerateAsync();
-			if (num)
+			bool generated = await new EntityDomainOrchestrator(domainDef, _config).GenerateAsync();
+			if (generated)
 			{
 				Logger.LogSuccess("Regenerated EntityDomain: " + domainDef.EntityName);
 			}
-			return num;
+			return generated;
 		}
 		catch (Exception ex)
 		{

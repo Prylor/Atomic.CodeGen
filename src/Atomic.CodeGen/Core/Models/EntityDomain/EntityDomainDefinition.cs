@@ -56,22 +56,12 @@ public class EntityDomainDefinition
 
 	public bool IsSceneEntityMode()
 	{
-		EntityMode mode = Mode;
-		if ((uint)(mode - 2) <= 1u)
-		{
-			return true;
-		}
-		return false;
+		return Mode == EntityMode.SceneEntity || Mode == EntityMode.SceneEntitySingleton;
 	}
 
 	public bool IsPureEntityMode()
 	{
-		EntityMode mode = Mode;
-		if ((uint)mode <= 1u)
-		{
-			return true;
-		}
-		return false;
+		return Mode == EntityMode.Entity || Mode == EntityMode.EntitySingleton;
 	}
 
 	public string[] Validate()

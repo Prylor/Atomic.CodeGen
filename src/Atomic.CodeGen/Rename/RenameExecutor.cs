@@ -144,7 +144,7 @@ public sealed class RenameExecutor
 			}
 			else
 			{
-				text = string.Concat(text.Substring(0, operation.StartOffset), str2: text.Substring(operation.StartOffset + operation.Length), str1: operation.NewText);
+				text = text.Substring(0, operation.StartOffset) + operation.NewText + text.Substring(operation.StartOffset + operation.Length);
 			}
 		}
 		File.WriteAllText(filePath, text);
@@ -154,7 +154,7 @@ public sealed class RenameExecutor
 	private void RenameSourceFile(RenameContext context)
 	{
 		string sourceFilePath = context.SourceFilePath;
-		string text = Path.Combine(Path.GetDirectoryName(sourceFilePath) ?? string.Empty, string.Concat(str1: Path.GetExtension(sourceFilePath), str0: context.NewName));
+		string text = Path.Combine(Path.GetDirectoryName(sourceFilePath) ?? string.Empty, context.NewName + Path.GetExtension(sourceFilePath));
 		if (File.Exists(text))
 		{
 			throw new InvalidOperationException("Cannot rename file: " + text + " already exists");

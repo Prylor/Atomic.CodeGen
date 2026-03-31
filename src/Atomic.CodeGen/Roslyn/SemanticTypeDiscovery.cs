@@ -557,7 +557,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		else
 		{
 			EntityMode mode = definition.Mode;
-			bool flag2 = (uint)(mode - 2) <= 1u;
+			bool flag2 = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
 			generateProxy = flag2;
 		}
 		entityDomainDefinition.GenerateProxy = generateProxy;
@@ -571,7 +571,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 		else
 		{
 			EntityMode mode = definition.Mode;
-			bool flag2 = (uint)(mode - 2) <= 1u;
+			bool flag2 = mode == EntityMode.SceneEntity || mode == EntityMode.SceneEntitySingleton;
 			generateProxy = flag2;
 		}
 		entityDomainDefinition.GenerateWorld = generateProxy;
@@ -613,7 +613,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 			{
 				return true;
 			}
-			return (hasUsing && (text == shortName || text == shortName + "Attribute")) ? true : false;
+			return hasUsing && (text == shortName || text == shortName + "Attribute");
 		});
 	}
 

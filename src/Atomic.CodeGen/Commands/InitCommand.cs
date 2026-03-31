@@ -51,11 +51,11 @@ public static class InitCommand
 			else
 			{
 				await ConfigLoader.SaveAsync(config, projectPath);
-				bool num = GitIgnoreHelper.EnsureRenameBackupIgnored(projectPath);
+				bool gitignoreUpdated = GitIgnoreHelper.EnsureRenameBackupIgnored(projectPath);
 				AnsiConsole.WriteLine();
 				AnsiConsole.Write(new Rule("[green]Setup Complete[/]"));
 				AnsiConsole.MarkupLine("[green]✓[/] Configuration saved to: [blue]" + Markup.Escape(configPath) + "[/]");
-				if (num)
+				if (gitignoreUpdated)
 				{
 					AnsiConsole.MarkupLine("[green]✓[/] Added [blue].rename-backup/[/] to .gitignore");
 				}
