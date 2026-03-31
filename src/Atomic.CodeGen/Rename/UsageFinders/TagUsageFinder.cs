@@ -21,7 +21,7 @@ public sealed class TagUsageFinder : IUsageFinder
 			context.Errors.Add("Could not find API '" + context.OwnerName + "' in registry");
 			return results;
 		}
-		(string, string, string)[] array = new(string, string, string)[3]
+		(string, string, string)[] tagMethodPatterns = new(string, string, string)[3]
 		{
 			("\\bHas" + Regex.Escape(oldName) + "Tag\\b", "Has" + newName + "Tag", "MethodCall"),
 			("\\bAdd" + Regex.Escape(oldName) + "Tag\\b", "Add" + newName + "Tag", "MethodCall"),
@@ -34,24 +34,21 @@ public sealed class TagUsageFinder : IUsageFinder
 			{
 				continue;
 			}
-			string[] array2 = File.ReadAllText(file).Split('\n');
+			string[] sourceLines = File.ReadAllText(file).Split('\n');
 			FileImports imports = importAnalyzer.GetImports(file);
 			imports.HasNamespaceImport(ownerApi.Namespace);
 			List<ApiEntry> accessibleApis = (from a in registry.GetApisWithTag(oldName)
 				where imports.HasNamespaceImport(a.Namespace)
 				select a).ToList();
-			(string, string, string)[] array3 = array;
-			string[] array4;
-			for (int i = 0; i < array3.Length; i++)
+			for (int i = 0; i < tagMethodPatterns.Length; i++)
 			{
-				(string, string, string) tuple = array3[i];
+				(string, string, string) tuple = tagMethodPatterns[i];
 				string methodPattern = tuple.Item1;
 				string methodReplacement = tuple.Item2;
 				string methodCategory = tuple.Item3;
 				Regex regex = new Regex(methodPattern);
 				int lineNumber = 0;
-				array4 = array2;
-				foreach (string currentLine in array4)
+				foreach (string currentLine in sourceLines)
 				{
 					lineNumber++;
 					foreach (Match regexMatch in regex.Matches(currentLine))
@@ -75,8 +72,7 @@ public sealed class TagUsageFinder : IUsageFinder
 			}
 			Regex regex2 = new Regex(pattern);
 			int directRefLineNumber = 0;
-			array4 = array2;
-			foreach (string currentLine in array4)
+			foreach (string currentLine in sourceLines)
 			{
 				directRefLineNumber++;
 				foreach (Match directRefMatch in regex2.Matches(currentLine))
@@ -98,8 +94,7 @@ public sealed class TagUsageFinder : IUsageFinder
 			}
 			Regex regex3 = new Regex($"\\b{Regex.Escape(ownerApi.Namespace)}\\.{Regex.Escape(context.OwnerName)}\\.{Regex.Escape(oldName)}\\b");
 			int fqnLineNumber = 0;
-			array4 = array2;
-			foreach (string currentLine in array4)
+			foreach (string currentLine in sourceLines)
 			{
 				fqnLineNumber++;
 				foreach (Match fqnMatch in regex3.Matches(currentLine))

@@ -37,7 +37,24 @@ public static class ConfigureCommand
 			{
 				AnsiConsole.Clear();
 				ShowCurrentConfig(config, configPath, hasChanges);
-				string selectedOption = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").PageSize(16).AddChoices("Edit Analyzer Mode", "Edit Included Projects", "Edit Verbose Logging", "Edit Orphan Tracking", "Edit Include Timestamp", "Edit Backup Cap", "Edit Formatting", "Edit Scan Paths", "Edit Exclude Paths", "─────────────────", "Reset to Defaults", hasChanges ? "[green]Save Changes[/]" : "[dim]Save (no changes)[/]", "Exit without Saving"));
+				string selectedOption = AnsiConsole.Prompt(
+					new SelectionPrompt<string>()
+						.Title("[bold]What would you like to do?[/]")
+						.PageSize(16)
+						.AddChoices(
+							"Edit Analyzer Mode",
+							"Edit Included Projects",
+							"Edit Verbose Logging",
+							"Edit Orphan Tracking",
+							"Edit Include Timestamp",
+							"Edit Backup Cap",
+							"Edit Formatting",
+							"Edit Scan Paths",
+							"Edit Exclude Paths",
+							"─────────────────",
+							"Reset to Defaults",
+							hasChanges ? "[green]Save Changes[/]" : "[dim]Save (no changes)[/]",
+							"Exit without Saving"));
 				if (selectedOption.Contains("Exit"))
 				{
 					if (!hasChanges || AnsiConsole.Confirm("[yellow]You have unsaved changes. Exit anyway?[/]", defaultValue: false))
@@ -214,7 +231,10 @@ public static class ConfigureCommand
 		AnsiConsole.WriteLine();
 		HashSet<string> currentProjectSet = ((currentProjects != null) ? new HashSet<string>(currentProjects, StringComparer.OrdinalIgnoreCase) : null);
 		bool selectAll = currentProjectSet == null || currentProjectSet.Count == 0;
-		MultiSelectionPrompt<string> multiSelectionPrompt = new MultiSelectionPrompt<string>().Title("[bold]Select projects to include:[/]").PageSize(15).InstructionsText("[dim](Press [blue]<space>[/] to toggle, [green]<enter>[/] to confirm)[/]")
+		MultiSelectionPrompt<string> multiSelectionPrompt = new MultiSelectionPrompt<string>()
+			.Title("[bold]Select projects to include:[/]")
+			.PageSize(15)
+			.InstructionsText("[dim](Press [blue]<space>[/] to toggle, [green]<enter>[/] to confirm)[/]")
 			.AddChoices(solutionProjects);
 		if (selectAll)
 		{
@@ -295,7 +315,13 @@ public static class ConfigureCommand
 			Padding = new Padding(2, 1)
 		});
 		AnsiConsole.WriteLine();
-		return AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select analyzer mode:").AddChoices("Auto (recommended)", "MSBuild (requires VS/SDK)", "Buildalyzer (no VS/SDK needed)")) switch
+		return AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("Select analyzer mode:")
+				.AddChoices(
+					"Auto (recommended)",
+					"MSBuild (requires VS/SDK)",
+					"Buildalyzer (no VS/SDK needed)")) switch
 		{
 			"Auto (recommended)" => AnalyzerMode.Auto, 
 			"MSBuild (requires VS/SDK)" => AnalyzerMode.MSBuild, 
@@ -313,9 +339,23 @@ public static class ConfigureCommand
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("Current value: [cyan]" + ((currentValue == 0) ? "Unlimited" : currentValue.ToString()) + "[/]");
 		AnsiConsole.WriteLine();
-		return AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select backup cap:").AddChoices("5 backups", "10 backups", "20 backups", "50 backups", "Unlimited (0)", "Custom...")) switch
+		return AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("Select backup cap:")
+				.AddChoices(
+					"5 backups",
+					"10 backups",
+					"20 backups",
+					"50 backups",
+					"Unlimited (0)",
+					"Custom...")) switch
 		{
-			"Custom..." => AnsiConsole.Prompt(new TextPrompt<int>("Enter backup cap (0 for unlimited):").DefaultValue(currentValue).Validate((int n) => (n < 0) ? ValidationResult.Error("Must be 0 or greater") : ValidationResult.Success())), 
+			"Custom..." => AnsiConsole.Prompt(
+				new TextPrompt<int>("Enter backup cap (0 for unlimited):")
+					.DefaultValue(currentValue)
+					.Validate((int n) => (n < 0)
+						? ValidationResult.Error("Must be 0 or greater")
+						: ValidationResult.Success())),
 			"5 backups" => 5, 
 			"10 backups" => 10, 
 			"20 backups" => 20, 
@@ -334,7 +374,10 @@ public static class ConfigureCommand
 		string currentDisplay = (current.UseTabs ? "Tabs" : $"Spaces ({current.IndentSize})");
 		AnsiConsole.MarkupLine("Current: [yellow]" + currentDisplay + "[/]");
 		AnsiConsole.WriteLine();
-		return AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Indentation style:").AddChoices("Spaces (4)", "Spaces (2)", "Tabs")) switch
+		return AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("Indentation style:")
+				.AddChoices("Spaces (4)", "Spaces (2)", "Tabs")) switch
 		{
 			"Spaces (4)" => new FormattingOptions
 			{
@@ -379,7 +422,11 @@ public static class ConfigureCommand
 			{
 			case "Add Pattern":
 			{
-				string newPattern = AnsiConsole.Prompt(new TextPrompt<string>("Enter pattern (e.g., [blue]Assets/**/*.cs[/]):").Validate((string p) => string.IsNullOrWhiteSpace(p) ? ValidationResult.Error("Pattern cannot be empty") : ValidationResult.Success()));
+				string newPattern = AnsiConsole.Prompt(
+					new TextPrompt<string>("Enter pattern (e.g., [blue]Assets/**/*.cs[/]):")
+						.Validate((string p) => string.IsNullOrWhiteSpace(p)
+							? ValidationResult.Error("Pattern cannot be empty")
+							: ValidationResult.Success()));
 				patterns.Add(newPattern);
 				AnsiConsole.MarkupLine("[green]✓ Added:[/] " + Markup.Escape(newPattern));
 				Thread.Sleep(500);

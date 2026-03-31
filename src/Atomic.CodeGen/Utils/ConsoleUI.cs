@@ -20,7 +20,11 @@ public static class ConsoleUI
 
 	public static RenameCategory SelectRenameCategory()
 	{
-		string selectedChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What do you want to rename?[/]").PageSize(10).AddChoices("EntityAPI Tag or Value", "Behaviour", "Domain"));
+		string selectedChoice = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[bold]What do you want to rename?[/]")
+				.PageSize(10)
+				.AddChoices("EntityAPI Tag or Value", "Behaviour", "Domain"));
 		if (selectedChoice.StartsWith("EntityAPI"))
 		{
 			return RenameCategory.EntityAPI;
@@ -52,7 +56,11 @@ public static class ConsoleUI
 			AnsiConsole.MarkupLine("[red]No EntityAPIs found in project[/]");
 			return null;
 		}
-		string selectedApi = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select EntityAPI:[/]").PageSize(15).AddChoices(apis.Select((ApiEntry a) => a.ClassName + " (" + a.Namespace + ")")));
+		string selectedApi = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[bold]Select EntityAPI:[/]")
+				.PageSize(15)
+				.AddChoices(apis.Select((ApiEntry a) => a.ClassName + " (" + a.Namespace + ")")));
 		string className = selectedApi.Split(' ')[0];
 		return apis.FirstOrDefault((ApiEntry a) => a.ClassName == className);
 	}
@@ -72,7 +80,12 @@ public static class ConsoleUI
 			AnsiConsole.MarkupLine("[red]No behaviours found. Use [[LinkTo]] attribute to link behaviours to EntityAPIs.[/]");
 			return null;
 		}
-		string choice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select Behaviour to rename:[/]").PageSize(15).AddChoices(behaviourEntries.Select<(ApiEntry, string, string), string>(((ApiEntry api, string behaviour, string display) b) => b.display)));
+		string choice = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[bold]Select Behaviour to rename:[/]")
+				.PageSize(15)
+				.AddChoices(behaviourEntries.Select<(ApiEntry, string, string), string>(
+					((ApiEntry api, string behaviour, string display) b) => b.display)));
 		(ApiEntry, string, string) tuple = behaviourEntries.FirstOrDefault<(ApiEntry, string, string)>(((ApiEntry api, string behaviour, string display) b) => b.display == choice);
 		return (tuple.Item1, tuple.Item2);
 	}
@@ -84,7 +97,11 @@ public static class ConsoleUI
 			AnsiConsole.MarkupLine("[red]No EntityDomains found in project[/]");
 			return null;
 		}
-		string selectedDomain = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select EntityDomain:[/]").PageSize(15).AddChoices(domains.Select((DomainEntry d) => d.EntityName + " (" + d.ClassName + ")")));
+		string selectedDomain = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[bold]Select EntityDomain:[/]")
+				.PageSize(15)
+				.AddChoices(domains.Select((DomainEntry d) => d.EntityName + " (" + d.ClassName + ")")));
 		string entityName = selectedDomain.Split(' ')[0];
 		return domains.FirstOrDefault((DomainEntry d) => d.EntityName == entityName);
 	}
@@ -103,23 +120,31 @@ public static class ConsoleUI
 			AnsiConsole.MarkupLine($"[red]No {type}s found in {api.ClassName}[/]");
 			return null;
 		}
-		return AnsiConsole.Prompt(new SelectionPrompt<string>().Title($"[bold]Select {type} to rename:[/]").PageSize(15).AddChoices(symbolNames));
+		return AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title($"[bold]Select {type} to rename:[/]")
+				.PageSize(15)
+				.AddChoices(symbolNames));
 	}
 
 	public static string PromptNewName(string oldName)
 	{
-		return AnsiConsole.Prompt(new TextPrompt<string>("[bold]New name[/] (current: [yellow]" + oldName + "[/]):").Validate(delegate(string name)
-		{
-			if (string.IsNullOrWhiteSpace(name))
-			{
-				return ValidationResult.Error("Name cannot be empty");
-			}
-			if (!char.IsLetter(name[0]) && name[0] != '_')
-			{
-				return ValidationResult.Error("Name must start with a letter or underscore");
-			}
-			return (!name.All((char c) => char.IsLetterOrDigit(c) || c == '_')) ? ValidationResult.Error("Name can only contain letters, digits, and underscores") : ValidationResult.Success();
-		}));
+		return AnsiConsole.Prompt(
+			new TextPrompt<string>("[bold]New name[/] (current: [yellow]" + oldName + "[/]):")
+				.Validate(delegate(string name)
+				{
+					if (string.IsNullOrWhiteSpace(name))
+					{
+						return ValidationResult.Error("Name cannot be empty");
+					}
+					if (!char.IsLetter(name[0]) && name[0] != '_')
+					{
+						return ValidationResult.Error("Name must start with a letter or underscore");
+					}
+					return (!name.All((char c) => char.IsLetterOrDigit(c) || c == '_'))
+						? ValidationResult.Error("Name can only contain letters, digits, and underscores")
+						: ValidationResult.Success();
+				}));
 	}
 
 	public static void ShowPreview(RenameContext context, List<FileChangeSummary> preview)

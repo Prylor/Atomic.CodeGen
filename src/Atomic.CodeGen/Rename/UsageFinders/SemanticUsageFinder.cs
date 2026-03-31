@@ -83,14 +83,13 @@ public sealed class SemanticUsageFinder
 				results.Add(CreateUsageMatch(fieldUsage, tagName, newTagName, "TagField"));
 			}
 		}
-		string[] array = new string[3]
+		string[] tagMethods = new string[3]
 		{
 			"Has" + tagName + "Tag",
 			"Add" + tagName + "Tag",
 			"Del" + tagName + "Tag"
 		};
-		string[] array2 = array;
-		foreach (string methodName in array2)
+		foreach (string methodName in tagMethods)
 		{
 			IMethodSymbol methodSymbol = apiSymbol.GetMembers(methodName).OfType<IMethodSymbol>().FirstOrDefault();
 			if (methodSymbol == null)
@@ -127,9 +126,8 @@ public sealed class SemanticUsageFinder
 				results.Add(CreateUsageMatch(fieldUsage, valueName, newValueName, "ValueField"));
 			}
 		}
-		string[] array = new string[7] { "Get", "Set", "Has", "Del", "Add", "TryGet", "Ref" };
-		string[] array2 = array;
-		foreach (string prefix in array2)
+		string[] valuePrefixes = new string[7] { "Get", "Set", "Has", "Del", "Add", "TryGet", "Ref" };
+		foreach (string prefix in valuePrefixes)
 		{
 			string methodName = prefix + valueName;
 			IMethodSymbol methodSymbol = apiSymbol.GetMembers(methodName).OfType<IMethodSymbol>().FirstOrDefault();
@@ -244,9 +242,8 @@ public sealed class SemanticUsageFinder
 			string newBaseName = (newBehaviourName.EndsWith("Behaviour", StringComparison.OrdinalIgnoreCase) ? newBehaviourName.Substring(0, newBehaviourName.Length - "Behaviour".Length) : newBehaviourName);
 			string methodSuffix = oldBaseName + "Behaviour";
 			string newMethodSuffix = newBaseName + "Behaviour";
-			string[] array = new string[5] { "Has", "Get", "Add", "Del", "TryGet" };
-			string[] array2 = array;
-			foreach (string prefix in array2)
+			string[] behaviourPrefixes = new string[5] { "Has", "Get", "Add", "Del", "TryGet" };
+			foreach (string prefix in behaviourPrefixes)
 			{
 				string methodName = prefix + methodSuffix;
 				IMethodSymbol methodSymbol = apiSymbol.GetMembers(methodName).OfType<IMethodSymbol>().FirstOrDefault();
@@ -440,11 +437,10 @@ public sealed class SemanticUsageFinder
 		{
 			return;
 		}
-		string[] array = (await File.ReadAllTextAsync(filePath)).Split('\n');
+		string[] sourceLines = (await File.ReadAllTextAsync(filePath)).Split('\n');
 		Regex regex = new Regex("EntityName\\s*=>\\s*\"" + Regex.Escape(entityName) + "\"");
 		int lineNumber = 0;
-		string[] array2 = array;
-		foreach (string line in array2)
+		foreach (string line in sourceLines)
 		{
 			lineNumber++;
 			foreach (Match regexMatch in regex.Matches(line))

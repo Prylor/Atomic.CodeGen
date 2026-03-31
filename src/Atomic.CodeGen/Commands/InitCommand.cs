@@ -80,9 +80,11 @@ public static class InitCommand
 		codeGenConfig.TrackOrphans = AnsiConsole.Confirm("Enable orphan file tracking?");
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold]3. Code Formatting[/]");
-		string indentationChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Indentation style:").AddChoices("Spaces (4)", "Spaces (2)", "Tabs"));
-		CodeGenConfig codeGenConfig2 = codeGenConfig;
-		codeGenConfig2.Formatting = indentationChoice switch
+		string indentationChoice = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("Indentation style:")
+				.AddChoices("Spaces (4)", "Spaces (2)", "Tabs"));
+		codeGenConfig.Formatting = indentationChoice switch
 		{
 			"Spaces (4)" => new FormattingOptions
 			{
@@ -104,16 +106,26 @@ public static class InitCommand
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold]4. Fallback Scan Paths[/]");
 		AnsiConsole.MarkupLine("[dim]Used when no solution file is found (Roslyn is primary)[/]");
-		string scanPathChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Scan path configuration:").AddChoices("Default (Assets/**/*EntityAPI*.cs)", "All C# files (Assets/**/*.cs)", "Custom patterns"));
-		codeGenConfig2 = codeGenConfig;
+		string scanPathChoice = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("Scan path configuration:")
+				.AddChoices(
+					"Default (Assets/**/*EntityAPI*.cs)",
+					"All C# files (Assets/**/*.cs)",
+					"Custom patterns"));
 		List<string> scanPaths = ((scanPathChoice == "All C# files (Assets/**/*.cs)") ? new List<string> { "Assets/**/*.cs", "Packages/**/*.cs" } : ((!(scanPathChoice == "Custom patterns")) ? new List<string> { "Assets/**/*EntityAPI*.cs", "Packages/**/*EntityAPI*.cs" } : PromptForPatterns("scan")));
-		codeGenConfig2.ScanPaths = scanPaths;
+		codeGenConfig.ScanPaths = scanPaths;
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold]5. Exclude Paths[/]");
-		string excludePathChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Exclude path configuration:").AddChoices("Default (obj, Library, Temp, *.g.cs)", "Add custom exclusions", "Only custom patterns"));
-		codeGenConfig2 = codeGenConfig;
+		string excludePathChoice = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("Exclude path configuration:")
+				.AddChoices(
+					"Default (obj, Library, Temp, *.g.cs)",
+					"Add custom exclusions",
+					"Only custom patterns"));
 		scanPaths = ((excludePathChoice == "Add custom exclusions") ? GetDefaultExcludePaths().Concat(PromptForPatterns("exclude")).ToList() : ((!(excludePathChoice == "Only custom patterns")) ? GetDefaultExcludePaths() : PromptForPatterns("exclude")));
-		codeGenConfig2.ExcludePaths = scanPaths;
+		codeGenConfig.ExcludePaths = scanPaths;
 		return Task.FromResult(codeGenConfig);
 	}
 

@@ -17,7 +17,10 @@ public static class IdeCommand
 				AnsiConsole.Write(new FigletText("IDE Setup").LeftJustified().Color(Color.Blue));
 				AnsiConsole.Write(new Rule("[bold blue]Atomic CodeGen - IDE Integration[/]"));
 				AnsiConsole.WriteLine();
-				string selectedIde = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Select your IDE:[/]").AddChoices("JetBrains Rider", "Exit"));
+				string selectedIde = AnsiConsole.Prompt(
+					new SelectionPrompt<string>()
+						.Title("[bold]Select your IDE:[/]")
+						.AddChoices("JetBrains Rider", "Exit"));
 				if (selectedIde.Contains("Exit"))
 				{
 					break;
@@ -39,7 +42,18 @@ public static class IdeCommand
 			AnsiConsole.Write(new FigletText("Rider").LeftJustified().Color(Color.Purple));
 			AnsiConsole.Write(new Rule("[bold purple]JetBrains Rider Integration[/]"));
 			AnsiConsole.WriteLine();
-			string selectedSetup = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to set up?[/]").PageSize(10).AddChoices("Entity API Live Template (eapi)", "Entity Domain Live Template (edom)", "─────────────────────────────────", "Atomic Generate External Tool", "Atomic Rename External Tool", "─────────────────────────────────", "Back to IDE Selection"));
+			string selectedSetup = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("[bold]What would you like to set up?[/]")
+					.PageSize(10)
+					.AddChoices(
+						"Entity API Live Template (eapi)",
+						"Entity Domain Live Template (edom)",
+						"─────────────────────────────────",
+						"Atomic Generate External Tool",
+						"Atomic Rename External Tool",
+						"─────────────────────────────────",
+						"Back to IDE Selection"));
 			if (!selectedSetup.Contains("Back"))
 			{
 				if (selectedSetup.Contains("Entity API Live Template"))
@@ -212,7 +226,10 @@ public static class IdeCommand
 				Border = BoxBorder.Rounded
 			});
 			AnsiConsole.WriteLine();
-			string selectedAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Options:[/]").AddChoices("Show raw (for copying)", "Back"));
+			string selectedAction = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("[bold]Options:[/]")
+					.AddChoices("Show raw (for copying)", "Back"));
 			if (!selectedAction.Contains("Back"))
 			{
 				if (selectedAction.Contains("raw"))

@@ -134,10 +134,10 @@ public sealed class SemanticDomainUsageFinder
 	{
 		try
 		{
-			string[] array = await File.ReadAllLinesAsync(filePath);
-			if (lineNumber > 0 && lineNumber <= array.Length)
+			string[] fileLines = await File.ReadAllLinesAsync(filePath);
+			if (lineNumber > 0 && lineNumber <= fileLines.Length)
 			{
-				return array[lineNumber - 1].TrimEnd('\r');
+				return fileLines[lineNumber - 1].TrimEnd('\r');
 			}
 		}
 		catch
@@ -152,11 +152,10 @@ public sealed class SemanticDomainUsageFinder
 		{
 			return;
 		}
-		string[] array = (await File.ReadAllTextAsync(filePath)).Split('\n');
+		string[] sourceLines = (await File.ReadAllTextAsync(filePath)).Split('\n');
 		Regex regex = new Regex("EntityName\\s*=>\\s*\"" + Regex.Escape(entityName) + "\"");
 		int lineNumber = 0;
-		string[] array2 = array;
-		foreach (string line in array2)
+		foreach (string line in sourceLines)
 		{
 			lineNumber++;
 			foreach (Match regexMatch in regex.Matches(line))

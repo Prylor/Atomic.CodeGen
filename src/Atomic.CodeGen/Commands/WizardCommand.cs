@@ -41,7 +41,13 @@ public static class WizardCommand
 			AnsiConsole.MarkupLine("[yellow]No .sln file found in project directory.[/]");
 			AnsiConsole.MarkupLine("[dim]Framework check skipped - will verify during code generation.[/]");
 			AnsiConsole.WriteLine();
-			string selectedAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue with wizard", "Skip to configuration", "Exit wizard"));
+			string selectedAction = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("[bold]What would you like to do?[/]")
+					.AddChoices(
+						"Continue with wizard",
+						"Skip to configuration",
+						"Exit wizard"));
 			if (selectedAction.Contains("Exit"))
 			{
 				return false;
@@ -70,7 +76,13 @@ public static class WizardCommand
 			AnsiConsole.MarkupLine("[yellow]Warning: Could not analyze solution: " + Markup.Escape(ex.Message) + "[/]");
 			AnsiConsole.MarkupLine("[dim]Framework check skipped.[/]");
 			AnsiConsole.WriteLine();
-			string errorAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue with wizard", "Skip to configuration", "Exit wizard"));
+			string errorAction = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("[bold]What would you like to do?[/]")
+					.AddChoices(
+						"Continue with wizard",
+						"Skip to configuration",
+						"Exit wizard"));
 			if (errorAction.Contains("Exit"))
 			{
 				return false;
@@ -88,7 +100,13 @@ public static class WizardCommand
 			AnsiConsole.MarkupLine("  [green][[LinkTo]][/] attribute found");
 			AnsiConsole.MarkupLine("  [green]EntityDomainBuilder[/] found");
 			AnsiConsole.WriteLine();
-			string frameworkFoundAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue with wizard", "Skip to configuration", "Exit wizard"));
+			string frameworkFoundAction = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("[bold]What would you like to do?[/]")
+					.AddChoices(
+						"Continue with wizard",
+						"Skip to configuration",
+						"Exit wizard"));
 			if (frameworkFoundAction.Contains("Exit"))
 			{
 				return false;
@@ -123,7 +141,13 @@ public static class WizardCommand
 			Padding = new Padding(2, 1)
 		});
 		AnsiConsole.WriteLine();
-		string missingAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Continue anyway (for exploration)", "Skip to configuration", "Exit wizard"));
+		string missingAction = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[bold]What would you like to do?[/]")
+				.AddChoices(
+					"Continue anyway (for exploration)",
+					"Skip to configuration",
+					"Exit wizard"));
 		if (missingAction.Contains("Exit"))
 		{
 			return false;
@@ -227,7 +251,13 @@ public static class WizardCommand
 		{
 			AnsiConsole.MarkupLine("[yellow]Configuration file found:[/] " + Markup.Escape(configPath));
 			AnsiConsole.WriteLine();
-			string configAction = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]What would you like to do?[/]").AddChoices("Use existing configuration", "Create new configuration", "Exit wizard"));
+			string configAction = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("[bold]What would you like to do?[/]")
+					.AddChoices(
+						"Use existing configuration",
+						"Create new configuration",
+						"Exit wizard"));
 			if (configAction.Contains("Exit"))
 			{
 				return null;
@@ -249,7 +279,10 @@ public static class WizardCommand
 		config.TrackOrphans = AnsiConsole.Confirm("Enable orphan file tracking?");
 		AnsiConsole.WriteLine();
 		ShowParamDescription("Code Formatting", "Controls how generated code is indented.\nChoose based on your project's code style preferences.\n[dim]Most projects use Spaces (4)[/]");
-		config.Formatting = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select indentation style:").AddChoices("Spaces (4)", "Spaces (2)", "Tabs")) switch
+		config.Formatting = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("Select indentation style:")
+				.AddChoices("Spaces (4)", "Spaces (2)", "Tabs")) switch
 		{
 			"Spaces (4)" => new FormattingOptions
 			{
@@ -270,7 +303,14 @@ public static class WizardCommand
 		};
 		AnsiConsole.WriteLine();
 		ShowParamDescription("Backup Cap", "Maximum number of rename backups to keep.\nWhen the limit is reached, oldest backups are deleted automatically.\n[dim]Recommended: 10 (set to 0 for unlimited)[/]");
-		config.BackupCap = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select backup cap:").AddChoices("5 backups", "10 backups (recommended)", "20 backups", "Unlimited (0)")) switch
+		config.BackupCap = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("Select backup cap:")
+				.AddChoices(
+					"5 backups",
+					"10 backups (recommended)",
+					"20 backups",
+					"Unlimited (0)")) switch
 		{
 			"5 backups" => 5, 
 			"10 backups (recommended)" => 10, 
@@ -280,7 +320,10 @@ public static class WizardCommand
 		};
 		AnsiConsole.WriteLine();
 		ShowParamDescription("Exclude Paths", "Folders and patterns to exclude from scanning.\nDefault excludes: obj, Library, Temp, and generated files.\n[dim]You can add custom exclusions if needed[/]");
-		string excludePathChoice = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Exclude paths configuration:").AddChoices("Use defaults (recommended)", "Add custom exclusions"));
+		string excludePathChoice = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("Exclude paths configuration:")
+				.AddChoices("Use defaults (recommended)", "Add custom exclusions"));
 		config.ExcludePaths = GetDefaultExcludePaths();
 		if (excludePathChoice.Contains("custom"))
 		{
@@ -327,7 +370,10 @@ public static class WizardCommand
 		AnsiConsole.Write(new FigletText("IDE Setup").LeftJustified().Color(Color.Purple));
 		AnsiConsole.Write(new Rule("[bold purple]IDE Integration[/]"));
 		AnsiConsole.WriteLine();
-		if (!AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Would you like to set up IDE integration?[/]").AddChoices("Yes, set up JetBrains Rider", "Skip IDE setup")).Contains("Skip"))
+		if (!AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[bold]Would you like to set up IDE integration?[/]")
+				.AddChoices("Yes, set up JetBrains Rider", "Skip IDE setup")).Contains("Skip"))
 		{
 			ShowRiderSetupWizard();
 		}
@@ -381,7 +427,10 @@ public static class WizardCommand
 			Border = BoxBorder.Rounded
 		});
 		AnsiConsole.WriteLine();
-		if (AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Template Code:[/]").AddChoices("Show template (for copying)", "Next")).Contains("Show"))
+		if (AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[bold]Template Code:[/]")
+				.AddChoices("Show template (for copying)", "Next")).Contains("Show"))
 		{
 			AnsiConsole.Clear();
 			AnsiConsole.Write(new Rule("[bold green]" + abbreviation + " - Copy This Template[/]"));
@@ -432,7 +481,10 @@ public static class WizardCommand
 			Padding = new Padding(2, 1)
 		});
 		AnsiConsole.WriteLine();
-		AnsiConsole.Prompt(new SelectionPrompt<string>().Title("[bold]Ready?[/]").AddChoices("Next"));
+		AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[bold]Ready?[/]")
+				.AddChoices("Next"));
 	}
 
 	private static void ShowComplete(string projectPath)
@@ -462,7 +514,9 @@ public static class WizardCommand
 	private static bool PromptNavigation(string nextLabel)
 	{
 		AnsiConsole.WriteLine();
-		if (AnsiConsole.Prompt(new SelectionPrompt<string>().AddChoices(nextLabel, "Exit wizard")).Contains("Exit"))
+		if (AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.AddChoices(nextLabel, "Exit wizard")).Contains("Exit"))
 		{
 			AnsiConsole.MarkupLine("[dim]Wizard cancelled.[/]");
 			return false;

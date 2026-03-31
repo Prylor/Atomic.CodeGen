@@ -20,7 +20,7 @@ public sealed class BehaviourUsageFinder : IUsageFinder
 		string newBaseName = (newName.EndsWith("Behaviour", StringComparison.OrdinalIgnoreCase) ? newName.Substring(0, newName.Length - "Behaviour".Length) : newName);
 		string oldBehaviourName = oldBaseName + "Behaviour";
 		string newBehaviourName = newBaseName + "Behaviour";
-		(string, string, string)[] array = new(string, string, string)[5]
+		(string, string, string)[] behaviourMethodPatterns = new(string, string, string)[5]
 		{
 			("\\bHas" + Regex.Escape(oldBehaviourName) + "\\b", "Has" + newBehaviourName, "HasMethod"),
 			("\\bGet" + Regex.Escape(oldBehaviourName) + "\\b", "Get" + newBehaviourName, "GetMethod"),
@@ -28,7 +28,7 @@ public sealed class BehaviourUsageFinder : IUsageFinder
 			("\\bDel" + Regex.Escape(oldBehaviourName) + "\\b", "Del" + newBehaviourName, "DelMethod"),
 			("\\bTryGet" + Regex.Escape(oldBehaviourName) + "\\b", "TryGet" + newBehaviourName, "TryGetMethod")
 		};
-		(string, string, string)[] array2 = new(string, string, string)[8]
+		(string, string, string)[] typePatterns = new(string, string, string)[8]
 		{
 			("\\bnew\\s+" + Regex.Escape(oldName) + "\\s*\\(", "new " + newName + "(", "Constructor"),
 			("\\btypeof\\s*\\(\\s*" + Regex.Escape(oldName) + "\\s*\\)", "typeof(" + newName + ")", "TypeOf"),
@@ -45,23 +45,20 @@ public sealed class BehaviourUsageFinder : IUsageFinder
 			{
 				continue;
 			}
-			string[] array3 = File.ReadAllText(file).Split('\n');
+			string[] sourceLines = File.ReadAllText(file).Split('\n');
 			FileImports imports = importAnalyzer.GetImports(file);
 			List<ApiEntry> accessibleApis = (from a in registry.GetApisWithBehaviour(oldName)
 				where imports.HasNamespaceImport(a.Namespace)
 				select a).ToList();
-			(string, string, string)[] array4 = array;
-			string[] array5;
-			for (int i = 0; i < array4.Length; i++)
+			for (int i = 0; i < behaviourMethodPatterns.Length; i++)
 			{
-				(string, string, string) tuple = array4[i];
+				(string, string, string) tuple = behaviourMethodPatterns[i];
 				string methodPattern = tuple.Item1;
 				string methodReplacement = tuple.Item2;
 				string methodCategory = tuple.Item3;
 				Regex regex = new Regex(methodPattern);
 				int lineNumber = 0;
-				array5 = array3;
-				foreach (string currentLine in array5)
+				foreach (string currentLine in sourceLines)
 				{
 					lineNumber++;
 					foreach (Match regexMatch in regex.Matches(currentLine))
@@ -83,17 +80,15 @@ public sealed class BehaviourUsageFinder : IUsageFinder
 					}
 				}
 			}
-			array4 = array2;
-			for (int i = 0; i < array4.Length; i++)
+			for (int i = 0; i < typePatterns.Length; i++)
 			{
-				(string, string, string) tuple2 = array4[i];
+				(string, string, string) tuple2 = typePatterns[i];
 				string typePattern = tuple2.Item1;
 				string typeReplacement = tuple2.Item2;
 				string typeCategory = tuple2.Item3;
 				Regex regex2 = new Regex(typePattern);
 				int typeLineNumber = 0;
-				array5 = array3;
-				foreach (string currentLine in array5)
+				foreach (string currentLine in sourceLines)
 				{
 					typeLineNumber++;
 					foreach (Match regexMatch in regex2.Matches(currentLine))
@@ -136,8 +131,7 @@ public sealed class BehaviourUsageFinder : IUsageFinder
 			}
 			Regex regex3 = new Regex("\\bclass\\s+" + Regex.Escape(oldName) + "\\b");
 			int classLineNumber = 0;
-			array5 = array3;
-			foreach (string currentLine in array5)
+			foreach (string currentLine in sourceLines)
 			{
 				classLineNumber++;
 				foreach (Match classMatch in regex3.Matches(currentLine))

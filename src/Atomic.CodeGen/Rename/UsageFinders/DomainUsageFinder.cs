@@ -198,12 +198,12 @@ public sealed class DomainUsageFinder : IUsageFinder
 
 	private void AddExpectedTypes(string entityName, string newEntityName, Dictionary<string, string> definedTypes)
 	{
-		string[] array = new string[11]
+		string[] typeSuffixes = new string[11]
 		{
 			"", "Behaviours", "Factory", "Pool", "View", "ViewPool", "ViewCatalog", "Baker", "Installer", "UI",
 			"Aspect"
 		};
-		foreach (string suffix in array)
+		foreach (string suffix in typeSuffixes)
 		{
 			definedTypes.TryAdd(entityName + suffix, newEntityName + suffix);
 			definedTypes.TryAdd("I" + entityName + suffix, "I" + newEntityName + suffix);
@@ -211,8 +211,8 @@ public sealed class DomainUsageFinder : IUsageFinder
 		definedTypes.TryAdd("Scene" + entityName, "Scene" + newEntityName);
 		definedTypes.TryAdd("Scene" + entityName + "World", "Scene" + newEntityName + "World");
 		definedTypes.TryAdd("Scene" + entityName + "Proxy", "Scene" + newEntityName + "Proxy");
-		array = new string[8] { "Init", "Dispose", "Enable", "Disable", "Tick", "FixedTick", "LateTick", "Gizmos" };
-		foreach (string lifecycleSuffix in array)
+		string[] lifecycleSuffixes = new string[8] { "Init", "Dispose", "Enable", "Disable", "Tick", "FixedTick", "LateTick", "Gizmos" };
+		foreach (string lifecycleSuffix in lifecycleSuffixes)
 		{
 			definedTypes.TryAdd(entityName + lifecycleSuffix, newEntityName + lifecycleSuffix);
 		}
@@ -241,11 +241,10 @@ public sealed class DomainUsageFinder : IUsageFinder
 
 	private void FindEntityNameProperty(string filePath, string content, string entityName, string newEntityName, List<UsageMatch> results)
 	{
-		string[] array = content.Split('\n');
+		string[] sourceLines = content.Split('\n');
 		Regex regex = new Regex("EntityName\\s*=>\\s*\"" + Regex.Escape(entityName) + "\"");
 		int lineNumber = 0;
-		string[] array2 = array;
-		foreach (string line in array2)
+		foreach (string line in sourceLines)
 		{
 			lineNumber++;
 			foreach (Match regexMatch in regex.Matches(line))
