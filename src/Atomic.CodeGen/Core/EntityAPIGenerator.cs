@@ -16,7 +16,7 @@ public sealed class EntityAPIGenerator
 
 	private const string UnsafeSuffix = "Unsafe";
 
-	private const string RefModifier = "ref";
+	private const string RefModifier = "ref ";
 
 	private const string ParamName = "entity";
 
@@ -261,13 +261,13 @@ public sealed class EntityAPIGenerator
 			sb.AppendLine($"{indent}#region {tag}");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool Has{tag}Tag(this {_definition.EntityType} entity) => entity.HasTag({tag});");
+			sb.AppendLine($"{indent}public static bool Has{tag}Tag(this {_definition.EntityType} {ParamName}) => {ParamName}.HasTag({tag});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool Add{tag}Tag(this {_definition.EntityType} entity) => entity.AddTag({tag});");
+			sb.AppendLine($"{indent}public static bool Add{tag}Tag(this {_definition.EntityType} {ParamName}) => {ParamName}.AddTag({tag});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool Del{tag}Tag(this {_definition.EntityType} entity) => entity.DelTag({tag});");
+			sb.AppendLine($"{indent}public static bool Del{tag}Tag(this {_definition.EntityType} {ParamName}) => {ParamName}.DelTag({tag});");
 			sb.AppendLine();
 			sb.AppendLine($"{indent}#endregion");
 		}
@@ -283,30 +283,30 @@ public sealed class EntityAPIGenerator
 			sb.AppendLine();
 			sb.AppendLine($"{indent}#region {fieldName}");
 			sb.AppendLine();
-			string unsafeSuffix = (_definition.UnsafeAccess ? "Unsafe" : "");
-			string refModifier = (_definition.UnsafeAccess ? "ref " : "");
+			string unsafeSuffix = (_definition.UnsafeAccess ? UnsafeSuffix : "");
+			string refModifier = (_definition.UnsafeAccess ? RefModifier : "");
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static {valueType} Get{fieldName}(this {_definition.EntityType} entity) => entity.GetValue{unsafeSuffix}<{valueType}>({fieldName});");
+			sb.AppendLine($"{indent}public static {valueType} Get{fieldName}(this {_definition.EntityType} {ParamName}) => {ParamName}.GetValue{unsafeSuffix}<{valueType}>({fieldName});");
 			if (_definition.UnsafeAccess)
 			{
 				sb.AppendLine();
-				sb.AppendLine($"{indent}public static {refModifier}{valueType} Ref{fieldName}(this {_definition.EntityType} entity) => {refModifier}entity.GetValue{unsafeSuffix}<{valueType}>({fieldName});");
+				sb.AppendLine($"{indent}public static {refModifier}{valueType} Ref{fieldName}(this {_definition.EntityType} {ParamName}) => {refModifier}{ParamName}.GetValue{unsafeSuffix}<{valueType}>({fieldName});");
 			}
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool TryGet{fieldName}(this {_definition.EntityType} entity, out {valueType} value) => entity.TryGetValue{unsafeSuffix}({fieldName}, out value);");
+			sb.AppendLine($"{indent}public static bool TryGet{fieldName}(this {_definition.EntityType} entity, out {valueType} value) => {ParamName}.TryGetValue{unsafeSuffix}({fieldName}, out value);");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static void Add{fieldName}(this {_definition.EntityType} entity, {valueType} value) => entity.AddValue({fieldName}, value);");
+			sb.AppendLine($"{indent}public static void Add{fieldName}(this {_definition.EntityType} entity, {valueType} value) => {ParamName}.AddValue({fieldName}, value);");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool Has{fieldName}(this {_definition.EntityType} entity) => entity.HasValue({fieldName});");
+			sb.AppendLine($"{indent}public static bool Has{fieldName}(this {_definition.EntityType} {ParamName}) => {ParamName}.HasValue({fieldName});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool Del{fieldName}(this {_definition.EntityType} entity) => entity.DelValue({fieldName});");
+			sb.AppendLine($"{indent}public static bool Del{fieldName}(this {_definition.EntityType} {ParamName}) => {ParamName}.DelValue({fieldName});");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static void Set{fieldName}(this {_definition.EntityType} entity, {valueType} value) => entity.SetValue({fieldName}, value);");
+			sb.AppendLine($"{indent}public static void Set{fieldName}(this {_definition.EntityType} entity, {valueType} value) => {ParamName}.SetValue({fieldName}, value);");
 			sb.AppendLine();
 			sb.AppendLine($"{indent}#endregion");
 		}
@@ -324,28 +324,28 @@ public sealed class EntityAPIGenerator
 			sb.AppendLine($"{indent}#region {className}");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool Has{className}(this {_definition.EntityType} entity) => entity.HasBehaviour<{className}>();");
+			sb.AppendLine($"{indent}public static bool Has{className}(this {_definition.EntityType} {ParamName}) => {ParamName}.HasBehaviour<{className}>();");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static {className} Get{className}(this {_definition.EntityType} entity) => entity.GetBehaviour<{className}>();");
+			sb.AppendLine($"{indent}public static {className} Get{className}(this {_definition.EntityType} {ParamName}) => {ParamName}.GetBehaviour<{className}>();");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool TryGet{className}(this {_definition.EntityType} entity, out {className} behaviour) => entity.TryGetBehaviour(out behaviour);");
+			sb.AppendLine($"{indent}public static bool TryGet{className}(this {_definition.EntityType} entity, out {className} behaviour) => {ParamName}.TryGetBehaviour(out behaviour);");
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
 			if (linkedBehaviour.ConstructorParameters.Count == 0)
 			{
-				sb.AppendLine($"{indent}public static void Add{className}(this {_definition.EntityType} entity) => entity.AddBehaviour(new {className}());");
+				sb.AppendLine($"{indent}public static void Add{className}(this {_definition.EntityType} {ParamName}) => {ParamName}.AddBehaviour(new {className}());");
 			}
 			else
 			{
 				string constructorParams = string.Join(", ", linkedBehaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Type + " " + p.Name));
 				string constructorArgs = string.Join(", ", linkedBehaviour.ConstructorParameters.Select<(string, string), string>(((string Name, string Type) p) => p.Name));
-				sb.AppendLine($"{indent}public static void Add{className}(this {_definition.EntityType} entity, {constructorParams}) => entity.AddBehaviour(new {className}({constructorArgs}));");
+				sb.AppendLine($"{indent}public static void Add{className}(this {_definition.EntityType} entity, {constructorParams}) => {ParamName}.AddBehaviour(new {className}({constructorArgs}));");
 			}
 			sb.AppendLine();
 			AppendInliningAttribute(sb, indent);
-			sb.AppendLine($"{indent}public static bool Del{className}(this {_definition.EntityType} entity) => entity.DelBehaviour<{className}>();");
+			sb.AppendLine($"{indent}public static bool Del{className}(this {_definition.EntityType} {ParamName}) => {ParamName}.DelBehaviour<{className}>();");
 			sb.AppendLine();
 			sb.AppendLine($"{indent}#endregion");
 		}
@@ -355,7 +355,7 @@ public sealed class EntityAPIGenerator
 	{
 		if (_definition.AggressiveInlining)
 		{
-			sb.AppendLine($"{indent}{"[MethodImpl(MethodImplOptions.AggressiveInlining)]"}");
+			sb.AppendLine($"{indent}{AggressiveInliningAttribute}");
 		}
 	}
 

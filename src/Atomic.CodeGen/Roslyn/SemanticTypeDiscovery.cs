@@ -135,7 +135,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 						{
 							hasLinkToAttribute = true;
 						}
-						if (className == "EntityDomainBuilder" && classDecl.Modifiers.Any((SyntaxToken m) => m.IsKind(SyntaxKind.AbstractKeyword)))
+						if (className == EntityDomainBuilderName && classDecl.Modifiers.Any((SyntaxToken m) => m.IsKind(SyntaxKind.AbstractKeyword)))
 						{
 							hasEntityDomainBuilder = true;
 						}
@@ -190,7 +190,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 			{
 				continue;
 			}
-			if (HasAttribute(declaredSymbol, "Atomic.Entities.EntityAPIAttribute", "EntityAPI", hasAtomicEntitiesUsing))
+			if (HasAttribute(declaredSymbol, EntityAPIAttributeName, EntityAPIAttributeShortName, hasAtomicEntitiesUsing))
 			{
 				EntityAPIDefinition entityAPIDefinition = ParseEntityAPI(filePath, compilationUnitSyntax, classDecl, hasAtomicEntitiesUsing);
 				if (entityAPIDefinition != null)
@@ -198,7 +198,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 					result.EntityApis.Add(entityAPIDefinition);
 				}
 			}
-			if (HasAttribute(declaredSymbol, "Atomic.Entities.LinkToAttribute", "LinkTo", hasAtomicEntitiesUsing))
+			if (HasAttribute(declaredSymbol, LinkToAttributeName, LinkToAttributeShortName, hasAtomicEntitiesUsing))
 			{
 				BehaviourDefinition behaviourDefinition = ParseBehaviour(filePath, compilationUnitSyntax, classDecl, hasAtomicEntitiesUsing);
 				if (behaviourDefinition != null)
@@ -206,7 +206,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 					result.Behaviours.Add(behaviourDefinition);
 				}
 			}
-			if (InheritsFrom(declaredSymbol, "EntityDomainBuilder") || ImplementsInterface(declaredSymbol, "IEntityDomain"))
+			if (InheritsFrom(declaredSymbol, EntityDomainBuilderName) || ImplementsInterface(declaredSymbol, IEntityDomainName))
 			{
 				EntityDomainDefinition entityDomainDefinition = ParseDomain(filePath, compilationUnitSyntax, classDecl);
 				if (entityDomainDefinition != null)
@@ -257,7 +257,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 
 	private EntityAPIDefinition? ParseEntityAPI(string filePath, CompilationUnitSyntax root, ClassDeclarationSyntax classDecl, bool hasAtomicEntitiesUsing)
 	{
-		AttributeSyntax attribute = GetAttribute(classDecl, "EntityAPI", hasAtomicEntitiesUsing);
+		AttributeSyntax attribute = GetAttribute(classDecl, EntityAPIAttributeShortName, hasAtomicEntitiesUsing);
 		if (attribute == null)
 		{
 			return null;
@@ -303,7 +303,7 @@ public sealed class SemanticTypeDiscovery : IDisposable
 
 	private BehaviourDefinition? ParseBehaviour(string filePath, CompilationUnitSyntax root, ClassDeclarationSyntax classDecl, bool hasAtomicEntitiesUsing)
 	{
-		AttributeSyntax attribute = GetAttribute(classDecl, "LinkTo", hasAtomicEntitiesUsing);
+		AttributeSyntax attribute = GetAttribute(classDecl, LinkToAttributeShortName, hasAtomicEntitiesUsing);
 		if (attribute == null)
 		{
 			return null;
