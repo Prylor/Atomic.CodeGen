@@ -143,7 +143,7 @@ public sealed class RenameOrchestrator
 		ApiEntry ownerApi = registry.GetByClassName(ownerName);
 		if (ownerApi == null && type != RenameType.Domain)
 		{
-			context.Errors.Add("EntityAPI '" + ownerName + "' not found in project");
+			context.Errors.Add($"EntityAPI '{ownerName}' not found in project");
 			return context;
 		}
 		if (ownerApi != null)
@@ -153,18 +153,18 @@ public sealed class RenameOrchestrator
 		}
 		if (type == RenameType.Tag && ownerApi != null && !ownerApi.Tags.Contains(oldName))
 		{
-			context.Errors.Add("Tag '" + oldName + "' not found in " + ownerName);
+			context.Errors.Add($"Tag '{oldName}' not found in {ownerName}");
 		}
 		else if (type == RenameType.Value && ownerApi != null && !ownerApi.Values.Contains(oldName))
 		{
-			context.Errors.Add("Value '" + oldName + "' not found in " + ownerName);
+			context.Errors.Add($"Value '{oldName}' not found in {ownerName}");
 		}
 		else if (type == RenameType.Behaviour && ownerApi != null)
 		{
 			BehaviourDefinition behaviourDefinition = ownerApi.BehaviourDefinitions.FirstOrDefault((BehaviourDefinition b) => b.ClassName.Equals(oldName, StringComparison.OrdinalIgnoreCase));
 			if (behaviourDefinition == null)
 			{
-				context.Errors.Add("Behaviour '" + oldName + "' not linked to " + ownerName);
+				context.Errors.Add($"Behaviour '{oldName}' not linked to {ownerName}");
 			}
 			else
 			{
@@ -176,7 +176,7 @@ public sealed class RenameOrchestrator
 			DomainEntry domainEntry = await GetDomainByEntityNameAsync(oldName);
 			if (domainEntry == null)
 			{
-				context.Errors.Add("EntityDomain with EntityName '" + oldName + "' not found");
+				context.Errors.Add($"EntityDomain with EntityName '{oldName}' not found");
 			}
 			else
 			{
@@ -198,7 +198,7 @@ public sealed class RenameOrchestrator
 		}
 		if (!IsValidIdentifier(newName))
 		{
-			context.Errors.Add("'" + newName + "' is not a valid C# identifier");
+			context.Errors.Add($"'{newName}' is not a valid C# identifier");
 		}
 		return context;
 	}
@@ -247,7 +247,7 @@ public sealed class RenameOrchestrator
 			Logger.LogVerbose("No solution file found, skipping semantic analysis");
 			return new List<UsageMatch>();
 		}
-		Logger.LogVerbose("Found solution: " + solutionPath);
+		Logger.LogVerbose($"Found solution: {solutionPath}");
 		try
 		{
 			List<UsageMatch> result = await new SemanticUsageFinder(solutionPath, _config.AnalyzerMode, _config.IncludedProjects).FindUsagesAsync(context);
@@ -256,8 +256,8 @@ public sealed class RenameOrchestrator
 		}
 		catch (Exception ex)
 		{
-			Logger.LogWarning("Semantic analysis failed: " + ex.Message);
-			Logger.LogVerbose("Stack trace: " + ex.StackTrace);
+			Logger.LogWarning($"Semantic analysis failed: {ex.Message}");
+			Logger.LogVerbose($"Stack trace: {ex.StackTrace}");
 			return new List<UsageMatch>();
 		}
 	}
@@ -297,7 +297,7 @@ public sealed class RenameOrchestrator
 		EntityAPIDefinition definition = await new EntityAPIParser().ParseFileAsync(apiSourceFile);
 		if (definition == null || !definition.IsValid)
 		{
-			Logger.LogWarning("Could not parse API at " + apiSourceFile + " for regeneration");
+			Logger.LogWarning($"Could not parse API at {apiSourceFile} for regeneration");
 			return false;
 		}
 		BehaviourParser behaviourParser = new BehaviourParser();
@@ -314,13 +314,13 @@ public sealed class RenameOrchestrator
 			bool generated = await new EntityAPIGenerator(definition, _config).GenerateAsync();
 			if (generated)
 			{
-				Logger.LogSuccess("Regenerated " + definition.ClassName);
+				Logger.LogSuccess($"Regenerated {definition.ClassName}");
 			}
 			return generated;
 		}
 		catch (Exception ex)
 		{
-			Logger.LogError("Failed to regenerate " + definition.ClassName + ": " + ex.Message);
+			Logger.LogError($"Failed to regenerate {definition.ClassName}: {ex.Message}");
 			return false;
 		}
 	}
@@ -332,7 +332,7 @@ public sealed class RenameOrchestrator
 			EntityDomainDefinition domainDef = await EntityDomainScanner.ParseFileAsync(context.SourceFilePath, _config);
 			if (domainDef == null)
 			{
-				Logger.LogWarning("Could not parse domain definition at " + context.SourceFilePath);
+				Logger.LogWarning($"Could not parse domain definition at {context.SourceFilePath}");
 				return false;
 			}
 			if (!domainDef.EntityName.Equals(context.NewName, StringComparison.OrdinalIgnoreCase))
@@ -342,13 +342,13 @@ public sealed class RenameOrchestrator
 			bool generated = await new EntityDomainOrchestrator(domainDef, _config).GenerateAsync();
 			if (generated)
 			{
-				Logger.LogSuccess("Regenerated EntityDomain: " + domainDef.EntityName);
+				Logger.LogSuccess($"Regenerated EntityDomain: {domainDef.EntityName}");
 			}
 			return generated;
 		}
 		catch (Exception ex)
 		{
-			Logger.LogError("Failed to regenerate domain: " + ex.Message);
+			Logger.LogError($"Failed to regenerate domain: {ex.Message}");
 			return false;
 		}
 	}

@@ -14,6 +14,6 @@ public sealed class DomainEntry
 
 	public override string ToString()
 	{
-		return ClassName + " (" + EntityName + ")";
+		return $"{ClassName} ({EntityName})";
 	}
 }

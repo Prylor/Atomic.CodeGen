@@ -72,7 +72,7 @@ public sealed class SemanticUsageFinder
 		INamedTypeSymbol apiSymbol = await FindApiClassAsync(context.OwnerName, context.OwnerNamespace);
 		if (apiSymbol == null)
 		{
-			Logger.LogWarning("Could not find API class '" + context.OwnerName + "' for semantic analysis");
+			Logger.LogWarning($"Could not find API class '{context.OwnerName}' for semantic analysis");
 			return results;
 		}
 		IFieldSymbol fieldSymbol = apiSymbol.GetMembers(tagName).OfType<IFieldSymbol>().FirstOrDefault((IFieldSymbol f) => f.IsStatic);
@@ -115,7 +115,7 @@ public sealed class SemanticUsageFinder
 		INamedTypeSymbol apiSymbol = await FindApiClassAsync(context.OwnerName, context.OwnerNamespace);
 		if (apiSymbol == null)
 		{
-			Logger.LogWarning("Could not find API class '" + context.OwnerName + "' for semantic analysis");
+			Logger.LogWarning($"Could not find API class '{context.OwnerName}' for semantic analysis");
 			return results;
 		}
 		IFieldSymbol fieldSymbol = apiSymbol.GetMembers(valueName).OfType<IFieldSymbol>().FirstOrDefault((IFieldSymbol f) => f.IsStatic);
@@ -162,7 +162,7 @@ public sealed class SemanticUsageFinder
 		}
 		if (namedTypeSymbol == null)
 		{
-			Logger.LogWarning("Could not find behaviour class '" + behaviourName + "' for semantic analysis");
+			Logger.LogWarning($"Could not find behaviour class '{behaviourName}' for semantic analysis");
 			return results;
 		}
 		foreach (Location location in namedTypeSymbol.Locations)
@@ -446,7 +446,7 @@ public sealed class SemanticUsageFinder
 					Column = regexMatch.Index + 1,
 					Length = regexMatch.Length,
 					MatchedText = regexMatch.Value,
-					ReplacementText = "EntityName => \"" + newEntityName + "\"",
+					ReplacementText = $"EntityName => \"{newEntityName}\"",
 					LineContext = line.TrimEnd('\r'),
 					Category = "EntityNameProperty",
 					IsAmbiguous = false
@@ -584,7 +584,7 @@ public sealed class SemanticUsageFinder
 		}
 		catch (Exception ex)
 		{
-			Logger.LogVerbose("Error finding references for " + symbol.Name + ": " + ex.Message);
+			Logger.LogVerbose($"Error finding references for {symbol.Name}: {ex.Message}");
 		}
 		return usages;
 	}

@@ -28,9 +28,7 @@ public sealed class DomainUsageFinder : IUsageFinder
 		string oldName = context.OldName;
 		string newName = context.NewName;
 		string sourceFilePath = context.SourceFilePath;
-		_ = context.OwnerNamespace;
 		List<string> allFiles = files.ToList();
-		Path.GetDirectoryName(Path.GetFullPath(sourceFilePath));
 		string outputDirectory = context.OutputDirectory;
 		HashSet<string> generatedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		HashSet<string> generatedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -69,8 +67,6 @@ public sealed class DomainUsageFinder : IUsageFinder
 		{
 			generatedDirectories.Add(Path.GetFullPath(outputDirectory));
 		}
-		string deconstructedKey;
-		string deconstructedValue;
 		foreach (string generatedFile in generatedFilePaths)
 		{
 			if (!File.Exists(generatedFile))
@@ -78,11 +74,8 @@ public sealed class DomainUsageFinder : IUsageFinder
 				continue;
 			}
 			string[] lines = File.ReadAllText(generatedFile).Split('\n');
-			foreach (KeyValuePair<string, string> typeRename in typeRenames)
+			foreach (var (typeName, newTypeName) in typeRenames)
 			{
-				typeRename.Deconstruct(out deconstructedKey, out deconstructedValue);
-				string typeName = deconstructedKey;
-				string newTypeName = deconstructedValue;
 				string typeCategory = GetTypeCategory(typeName, oldName);
 				FindTypeReferences(generatedFile, lines, typeName, newTypeName, typeCategory, results);
 			}
@@ -103,13 +96,10 @@ public sealed class DomainUsageFinder : IUsageFinder
 				continue;
 			}
 			string[] lines2 = File.ReadAllText(consumerFile).Split('\n');
-			foreach (KeyValuePair<string, string> typeRename in typeRenames)
+			foreach (var (typeName, newTypeName) in typeRenames)
 			{
-				typeRename.Deconstruct(out deconstructedKey, out deconstructedValue);
-				string typeName2 = deconstructedKey;
-				string newTypeName2 = deconstructedValue;
-				string category = GetTypeCategory(typeName2, oldName) + " (consumer)";
-				FindTypeReferences(consumerFile, lines2, typeName2, newTypeName2, category, results);
+				string category = GetTypeCategory(typeName, oldName) + " (consumer)";
+				FindTypeReferences(consumerFile, lines2, typeName, newTypeName, category, results);
 			}
 		}
 		return results;
@@ -252,7 +242,7 @@ public sealed class DomainUsageFinder : IUsageFinder
 					Column = regexMatch.Index + 1,
 					Length = regexMatch.Length,
 					MatchedText = regexMatch.Value,
-					ReplacementText = "EntityName => \"" + newEntityName + "\"",
+					ReplacementText = $"EntityName => \"{newEntityName}\"",
 					LineContext = line.TrimEnd('\r'),
 					Category = "EntityNameProperty",
 					IsAmbiguous = false

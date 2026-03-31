@@ -41,13 +41,17 @@ public sealed class RenameContext
 
 	public bool IsValid => Errors.Count == 0;
 
-	public IEnumerable<string> AffectedFiles => Usages.Select((UsageMatch u) => u.FilePath).Concat(FileRenames.Select<(string, string), string>(((string OldPath, string NewPath) r) => r.OldPath)).Append(SourceFilePath)
+	public IEnumerable<string> AffectedFiles => Usages
+		.Select(u => u.FilePath)
+		.Concat(FileRenames.Select(r => r.OldPath))
+		.Append(SourceFilePath)
 		.Distinct();
 
-	public Dictionary<string, List<UsageMatch>> UsagesByFile => (from u in Usages
-		group u by u.FilePath).ToDictionary((IGrouping<string, UsageMatch> g) => g.Key, (IGrouping<string, UsageMatch> g) => (from u in g
-		orderby u.Line, u.Column
-		select u).ToList());
+	public Dictionary<string, List<UsageMatch>> UsagesByFile => Usages
+		.GroupBy(u => u.FilePath)
+		.ToDictionary(
+			g => g.Key,
+			g => g.OrderBy(u => u.Line).ThenBy(u => u.Column).ToList());
 
 	public string GetSummary()
 	{

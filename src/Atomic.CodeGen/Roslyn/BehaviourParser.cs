@@ -198,17 +198,11 @@ public sealed class BehaviourParser
 		{
 			return true;
 		}
-		bool isLinkTo = hasAtomicEntitiesUsing;
-		if (isLinkTo)
+		if (!hasAtomicEntitiesUsing)
 		{
-			bool isShortName = attributeName == "LinkTo" || attributeName == "LinkToAttribute";
-			isLinkTo = isShortName;
+			return false;
 		}
-		if (isLinkTo)
-		{
-			return true;
-		}
-		return false;
+		return attributeName == "LinkTo" || attributeName == "LinkToAttribute";
 	}
 
 	private static AttributeSyntax? GetLinkToAttribute(ClassDeclarationSyntax classDecl, bool hasAtomicEntitiesUsing)

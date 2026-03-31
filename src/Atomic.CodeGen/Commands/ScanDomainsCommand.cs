@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Atomic.CodeGen.Core.Generators.EntityDomain;
 using Atomic.CodeGen.Core.Models;
 using Atomic.CodeGen.Core.Models.EntityDomain;
@@ -22,85 +23,88 @@ public static class ScanDomainsCommand
 		Command command = new Command("scan-domains", "Scan for IEntityDomain implementations") { projectOption, generateOption };
 		command.SetHandler(async (string? projectPath, bool generate) =>
 		{
-			Logger.LogHeader("Atomic CodeGen - Entity Domain Scanner");
-			if (projectPath == null)
-			{
-				projectPath = Environment.CurrentDirectory;
-			}
-			CodeGenConfig config = await ConfigLoader.LoadAsync(projectPath);
-			string solutionPath = FindSolutionFile(projectPath);
-			Dictionary<string, EntityDomainDefinition> definitions;
-			if (solutionPath != null)
-			{
-				Logger.LogInfo("Using Roslyn semantic analysis...");
-				Logger.LogInfo("");
-				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath, config.AnalyzerMode, config.IncludedProjects);
-				definitions = await discovery.DiscoverDomainsAsync(config.ExcludePaths);
-			}
-			else
-			{
-				Logger.LogInfo("No solution file found, using file scanning...");
-				definitions = await EntityDomainScanner.ScanAsync(config);
-			}
-			if (definitions.Count == 0)
-			{
-				Logger.LogWarning("No IEntityDomain implementations found!");
-				Logger.LogInfo("Make sure your classes inherit from EntityDomainBuilder or implement IEntityDomain");
-			}
-			else
-			{
-				Logger.LogSuccess($"Found {definitions.Count} EntityDomain definition(s):");
-				AnsiConsole.WriteLine();
-				foreach (KeyValuePair<string, EntityDomainDefinition> item in definitions)
-				{
-					var (path, entityDomainDefinition) = item;
-					Path.GetRelativePath(config.GetAbsoluteProjectRoot(), path);
-					AnsiConsole.Write(new Panel(BuildDomainInfo(entityDomainDefinition, config))
-					{
-						Header = new PanelHeader("[bold blue]" + entityDomainDefinition.EntityName + "[/]"),
-						Border = BoxBorder.Rounded
-					});
-					AnsiConsole.WriteLine();
-				}
-				if (generate)
-				{
-					AnsiConsole.Write(new Rule("[bold]Generating[/]"));
-					AnsiConsole.WriteLine();
-					int generated = 0;
-					foreach (KeyValuePair<string, EntityDomainDefinition> item2 in definitions)
-					{
-						var (_, definition) = item2;
-						try
-						{
-							if (await new EntityDomainOrchestrator(definition, config).GenerateAsync())
-							{
-								generated++;
-								Logger.LogSuccess("✓ Generated: " + definition.EntityName);
-							}
-						}
-						catch (Exception ex)
-						{
-							Logger.LogError("✗ Failed: " + definition.EntityName + " - " + ex.Message);
-						}
-					}
-					AnsiConsole.WriteLine();
-					AnsiConsole.Write(new Rule("[bold green]Summary[/]"));
-					if (generated == definitions.Count)
-					{
-						Logger.LogSuccess($"Successfully generated {generated}/{definitions.Count} entity domain(s)");
-					}
-					else
-					{
-						Logger.LogWarning($"Generated {generated}/{definitions.Count} entity domain(s) (some failed)");
-					}
-				}
-				else
-				{
-					AnsiConsole.MarkupLine("[dim]Use --generate flag to create files[/]");
-				}
-			}
+			await ExecuteAsync(projectPath, generate);
 		}, projectOption, generateOption);
 		return command;
+	}
+
+	private static async Task ExecuteAsync(string? projectPath, bool generate)
+	{
+		Logger.LogHeader("Atomic CodeGen - Entity Domain Scanner");
+		if (projectPath == null)
+		{
+			projectPath = Environment.CurrentDirectory;
+		}
+		CodeGenConfig config = await ConfigLoader.LoadAsync(projectPath);
+		string solutionPath = FindSolutionFile(projectPath);
+		Dictionary<string, EntityDomainDefinition> definitions;
+		if (solutionPath != null)
+		{
+			Logger.LogInfo("Using Roslyn semantic analysis...");
+			Logger.LogInfo("");
+			using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath, config.AnalyzerMode, config.IncludedProjects);
+			definitions = await discovery.DiscoverDomainsAsync(config.ExcludePaths);
+		}
+		else
+		{
+			Logger.LogInfo("No solution file found, using file scanning...");
+			definitions = await EntityDomainScanner.ScanAsync(config);
+		}
+		if (definitions.Count == 0)
+		{
+			Logger.LogWarning("No IEntityDomain implementations found!");
+			Logger.LogInfo("Make sure your classes inherit from EntityDomainBuilder or implement IEntityDomain");
+			return;
+		}
+
+		Logger.LogSuccess($"Found {definitions.Count} EntityDomain definition(s):");
+		AnsiConsole.WriteLine();
+		foreach (KeyValuePair<string, EntityDomainDefinition> item in definitions)
+		{
+			var (_, definition) = item;
+			AnsiConsole.Write(new Panel(BuildDomainInfo(definition, config))
+			{
+				Header = new PanelHeader("[bold blue]" + definition.EntityName + "[/]"),
+				Border = BoxBorder.Rounded
+			});
+			AnsiConsole.WriteLine();
+		}
+		if (generate)
+		{
+			AnsiConsole.Write(new Rule("[bold]Generating[/]"));
+			AnsiConsole.WriteLine();
+			int generated = 0;
+			foreach (KeyValuePair<string, EntityDomainDefinition> item2 in definitions)
+			{
+				var (_, definition) = item2;
+				try
+				{
+					if (await new EntityDomainOrchestrator(definition, config).GenerateAsync())
+					{
+						generated++;
+						Logger.LogSuccess("✓ Generated: " + definition.EntityName);
+					}
+				}
+				catch (Exception ex)
+				{
+					Logger.LogError("✗ Failed: " + definition.EntityName + " - " + ex.Message);
+				}
+			}
+			AnsiConsole.WriteLine();
+			AnsiConsole.Write(new Rule("[bold green]Summary[/]"));
+			if (generated == definitions.Count)
+			{
+				Logger.LogSuccess($"Successfully generated {generated}/{definitions.Count} entity domain(s)");
+			}
+			else
+			{
+				Logger.LogWarning($"Generated {generated}/{definitions.Count} entity domain(s) (some failed)");
+			}
+		}
+		else
+		{
+			AnsiConsole.MarkupLine("[dim]Use --generate flag to create files[/]");
+		}
 	}
 
 	private static Markup BuildDomainInfo(EntityDomainDefinition definition, CodeGenConfig config)

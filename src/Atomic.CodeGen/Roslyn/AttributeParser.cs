@@ -29,23 +29,14 @@ public static class AttributeParser
 
 	private static object? ExtractValue(ExpressionSyntax expression)
 	{
-		if (!(expression is LiteralExpressionSyntax literal))
+		return expression switch
 		{
-			if (!(expression is ImplicitArrayCreationExpressionSyntax arrayExpr))
-			{
-				if (!(expression is ArrayCreationExpressionSyntax arrayExpr2))
-				{
-					if (expression is TypeOfExpressionSyntax typeOfExpr)
-					{
-						return ExtractTypeOfValue(typeOfExpr);
-					}
-					return null;
-				}
-				return ExtractExplicitArrayValue(arrayExpr2);
-			}
-			return ExtractArrayValue(arrayExpr);
-		}
-		return ExtractLiteralValue(literal);
+			LiteralExpressionSyntax lit => ExtractLiteralValue(lit),
+			ImplicitArrayCreationExpressionSyntax arr => ExtractArrayValue(arr),
+			ArrayCreationExpressionSyntax arr => ExtractExplicitArrayValue(arr),
+			TypeOfExpressionSyntax typeOf => ExtractTypeOfValue(typeOf),
+			_ => null
+		};
 	}
 
 	private static string? ExtractTypeOfValue(TypeOfExpressionSyntax typeOfExpr)

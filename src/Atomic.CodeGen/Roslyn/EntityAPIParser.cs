@@ -109,17 +109,11 @@ public sealed class EntityAPIParser
 		{
 			return true;
 		}
-		bool isEntityApi = hasAtomicEntitiesUsing;
-		if (isEntityApi)
+		if (!hasAtomicEntitiesUsing)
 		{
-			bool isShortName = attributeName == "EntityAPI" || attributeName == "EntityAPIAttribute";
-			isEntityApi = isShortName;
+			return false;
 		}
-		if (isEntityApi)
-		{
-			return true;
-		}
-		return false;
+		return attributeName == "EntityAPI" || attributeName == "EntityAPIAttribute";
 	}
 
 	private static string GetNamespace(ClassDeclarationSyntax classDecl)

@@ -39,9 +39,12 @@ public sealed class RenameExecutor
 			{
 				CleanupOldBackups(backupCap);
 			}
-			Dictionary<string, List<RenameOperation>> dictionary = (from u in context.CertainUsages
-				select RenameOperation.FromUsageMatch(u, File.ReadAllText(u.FilePath)) into op
-				group op by op.FilePath).ToDictionary((IGrouping<string, RenameOperation> g) => g.Key, (IGrouping<string, RenameOperation> g) => g.OrderByDescending((RenameOperation op) => op.StartOffset).ToList());
+			Dictionary<string, List<RenameOperation>> dictionary = context.CertainUsages
+				.Select(u => RenameOperation.FromUsageMatch(u, File.ReadAllText(u.FilePath)))
+				.GroupBy(op => op.FilePath)
+				.ToDictionary(
+					g => g.Key,
+					g => g.OrderByDescending(op => op.StartOffset).ToList());
 			foreach (var (filePath, operations) in dictionary)
 			{
 				ApplyOperationsToFile(filePath, operations);
@@ -54,14 +57,14 @@ public sealed class RenameExecutor
 			{
 				RenameGeneratedFiles(context);
 			}
-			Logger.LogInfo("Successfully renamed " + context.OldName + " to " + context.NewName);
+			Logger.LogInfo($"Successfully renamed {context.OldName} to {context.NewName}");
 			Logger.LogInfo($"Modified {dictionary.Count} file(s)");
-			Logger.LogInfo("Backup saved to: " + _backupDirectory);
+			Logger.LogInfo($"Backup saved to: {_backupDirectory}");
 			return true;
 		}
 		catch (Exception ex)
 		{
-			Logger.LogError("Rename failed: " + ex.Message);
+			Logger.LogError($"Rename failed: {ex.Message}");
 			Logger.LogInfo("Rolling back changes...");
 			try
 			{
@@ -70,8 +73,8 @@ public sealed class RenameExecutor
 			}
 			catch (Exception ex2)
 			{
-				Logger.LogError("Rollback failed: " + ex2.Message);
-				Logger.LogError("Manual restore from backup: " + _backupDirectory);
+				Logger.LogError($"Rollback failed: {ex2.Message}");
+				Logger.LogError($"Manual restore from backup: {_backupDirectory}");
 			}
 			return false;
 		}
@@ -120,11 +123,11 @@ public sealed class RenameExecutor
 			try
 			{
 				backupDir.Delete(recursive: true);
-				Logger.LogVerbose("Deleted old backup: " + backupDir.Name);
+				Logger.LogVerbose($"Deleted old backup: {backupDir.Name}");
 			}
 			catch (Exception ex)
 			{
-				Logger.LogWarning("Failed to delete old backup " + backupDir.Name + ": " + ex.Message);
+				Logger.LogWarning($"Failed to delete old backup {backupDir.Name}: {ex.Message}");
 			}
 		}
 		if (backupsToDelete.Count > 0)
@@ -157,16 +160,16 @@ public sealed class RenameExecutor
 		string newFilePath = Path.Combine(Path.GetDirectoryName(sourceFilePath) ?? string.Empty, context.NewName + Path.GetExtension(sourceFilePath));
 		if (File.Exists(newFilePath))
 		{
-			throw new InvalidOperationException("Cannot rename file: " + newFilePath + " already exists");
+			throw new InvalidOperationException($"Cannot rename file: {newFilePath} already exists");
 		}
 		File.Move(sourceFilePath, newFilePath);
-		Logger.LogVerbose("Renamed file: " + GetRelativePath(sourceFilePath) + " -> " + Path.GetFileName(newFilePath));
+		Logger.LogVerbose($"Renamed file: {GetRelativePath(sourceFilePath)} -> {Path.GetFileName(newFilePath)}");
 		string oldMetaPath = sourceFilePath + ".meta";
 		string newMetaPath = newFilePath + ".meta";
 		if (File.Exists(oldMetaPath))
 		{
 			File.Move(oldMetaPath, newMetaPath);
-			Logger.LogVerbose("Renamed meta file: " + Path.GetFileName(oldMetaPath) + " -> " + Path.GetFileName(newMetaPath));
+			Logger.LogVerbose($"Renamed meta file: {Path.GetFileName(oldMetaPath)} -> {Path.GetFileName(newMetaPath)}");
 		}
 		UpdateCsprojReferences(sourceFilePath, newFilePath);
 	}
@@ -186,7 +189,7 @@ public sealed class RenameExecutor
 				if (updatedContent != csprojContent)
 				{
 					File.WriteAllText(csprojPath, updatedContent);
-					Logger.LogVerbose("Updated csproj: " + Path.GetFileName(csprojPath));
+					Logger.LogVerbose($"Updated csproj: {Path.GetFileName(csprojPath)}");
 				}
 			}
 		}
@@ -198,22 +201,22 @@ public sealed class RenameExecutor
 		{
 			if (!File.Exists(oldFilePath))
 			{
-				Logger.LogWarning("File not found for rename: " + GetRelativePath(oldFilePath));
+				Logger.LogWarning($"File not found for rename: {GetRelativePath(oldFilePath)}");
 				continue;
 			}
 			if (File.Exists(newFilePath))
 			{
-				Logger.LogWarning("Cannot rename file, target already exists: " + GetRelativePath(newFilePath));
+				Logger.LogWarning($"Cannot rename file, target already exists: {GetRelativePath(newFilePath)}");
 				continue;
 			}
 			File.Move(oldFilePath, newFilePath);
-			Logger.LogVerbose("Renamed file: " + Path.GetFileName(oldFilePath) + " -> " + Path.GetFileName(newFilePath));
+			Logger.LogVerbose($"Renamed file: {Path.GetFileName(oldFilePath)} -> {Path.GetFileName(newFilePath)}");
 			string oldMetaPath = oldFilePath + ".meta";
 			string newMetaPath = newFilePath + ".meta";
 			if (File.Exists(oldMetaPath))
 			{
 				File.Move(oldMetaPath, newMetaPath);
-				Logger.LogVerbose("Renamed meta file: " + Path.GetFileName(oldMetaPath) + " -> " + Path.GetFileName(newMetaPath));
+				Logger.LogVerbose($"Renamed meta file: {Path.GetFileName(oldMetaPath)} -> {Path.GetFileName(newMetaPath)}");
 			}
 			UpdateCsprojReferences(oldFilePath, newFilePath);
 		}

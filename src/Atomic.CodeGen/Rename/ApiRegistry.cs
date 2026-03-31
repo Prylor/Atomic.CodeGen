@@ -149,15 +149,15 @@ public sealed class ApiRegistry
 		List<string> conflicts = new List<string>();
 		if (byClassName.Tags.Contains(newName))
 		{
-			conflicts.Add("Tag '" + newName + "' already exists in " + apiClassName);
+			conflicts.Add($"Tag '{newName}' already exists in {apiClassName}");
 		}
 		if (byClassName.Values.Contains(newName))
 		{
-			conflicts.Add("Value '" + newName + "' already exists in " + apiClassName);
+			conflicts.Add($"Value '{newName}' already exists in {apiClassName}");
 		}
 		if (byClassName.Behaviours.Contains(newName))
 		{
-			conflicts.Add("Behaviour '" + newName + "' already exists in " + apiClassName);
+			conflicts.Add($"Behaviour '{newName}' already exists in {apiClassName}");
 		}
 		return new ConflictResult
 		{

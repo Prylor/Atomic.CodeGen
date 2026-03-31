@@ -18,7 +18,7 @@ public sealed class ValueUsageFinder : IUsageFinder
 		ApiEntry ownerApi = registry.GetByClassName(context.OwnerName);
 		if (ownerApi == null)
 		{
-			context.Errors.Add("Could not find API '" + context.OwnerName + "' in registry");
+			context.Errors.Add($"Could not find API '{context.OwnerName}' in registry");
 			return results;
 		}
 		(string, string, string)[] valueMethodPatterns = new(string, string, string)[7]

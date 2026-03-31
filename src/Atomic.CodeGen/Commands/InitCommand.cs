@@ -113,8 +113,12 @@ public static class InitCommand
 					"Default (Assets/**/*EntityAPI*.cs)",
 					"All C# files (Assets/**/*.cs)",
 					"Custom patterns"));
-		List<string> scanPaths = ((scanPathChoice == "All C# files (Assets/**/*.cs)") ? new List<string> { "Assets/**/*.cs", "Packages/**/*.cs" } : ((!(scanPathChoice == "Custom patterns")) ? new List<string> { "Assets/**/*EntityAPI*.cs", "Packages/**/*EntityAPI*.cs" } : PromptForPatterns("scan")));
-		codeGenConfig.ScanPaths = scanPaths;
+		codeGenConfig.ScanPaths = scanPathChoice switch
+		{
+			"All C# files (Assets/**/*.cs)" => new List<string> { "Assets/**/*.cs", "Packages/**/*.cs" },
+			"Custom patterns" => PromptForPatterns("scan"),
+			_ => new List<string> { "Assets/**/*EntityAPI*.cs", "Packages/**/*EntityAPI*.cs" }
+		};
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold]5. Exclude Paths[/]");
 		string excludePathChoice = AnsiConsole.Prompt(
@@ -124,8 +128,12 @@ public static class InitCommand
 					"Default (obj, Library, Temp, *.g.cs)",
 					"Add custom exclusions",
 					"Only custom patterns"));
-		scanPaths = ((excludePathChoice == "Add custom exclusions") ? GetDefaultExcludePaths().Concat(PromptForPatterns("exclude")).ToList() : ((!(excludePathChoice == "Only custom patterns")) ? GetDefaultExcludePaths() : PromptForPatterns("exclude")));
-		codeGenConfig.ExcludePaths = scanPaths;
+		codeGenConfig.ExcludePaths = excludePathChoice switch
+		{
+			"Add custom exclusions" => GetDefaultExcludePaths().Concat(PromptForPatterns("exclude")).ToList(),
+			"Only custom patterns" => PromptForPatterns("exclude"),
+			_ => GetDefaultExcludePaths()
+		};
 		return Task.FromResult(codeGenConfig);
 	}
 

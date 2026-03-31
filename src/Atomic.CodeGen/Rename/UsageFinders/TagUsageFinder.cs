@@ -18,7 +18,7 @@ public sealed class TagUsageFinder : IUsageFinder
 		ApiEntry ownerApi = registry.GetByClassName(context.OwnerName);
 		if (ownerApi == null)
 		{
-			context.Errors.Add("Could not find API '" + context.OwnerName + "' in registry");
+			context.Errors.Add($"Could not find API '{context.OwnerName}' in registry");
 			return results;
 		}
 		(string, string, string)[] tagMethodPatterns = new(string, string, string)[3]
@@ -36,7 +36,6 @@ public sealed class TagUsageFinder : IUsageFinder
 			}
 			string[] sourceLines = File.ReadAllText(file).Split('\n');
 			FileImports imports = importAnalyzer.GetImports(file);
-			imports.HasNamespaceImport(ownerApi.Namespace);
 			List<ApiEntry> accessibleApis = (from a in registry.GetApisWithTag(oldName)
 				where imports.HasNamespaceImport(a.Namespace)
 				select a).ToList();

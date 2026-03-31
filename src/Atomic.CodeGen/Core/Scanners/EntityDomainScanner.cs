@@ -31,7 +31,6 @@ public static class EntityDomainScanner
 
 	public static async Task<EntityDomainDefinition?> ParseFileAsync(string filePath, CodeGenConfig config)
 	{
-		_ = 2;
 		try
 		{
 			if (!(await CSharpSyntaxTree.ParseText(await File.ReadAllTextAsync(filePath)).GetRootAsync() is CompilationUnitSyntax syntaxRoot))
@@ -318,7 +317,6 @@ public static class EntityDomainScanner
 		{
 			return value;
 		}
-		_ = expressionSyntax is InterpolatedStringExpressionSyntax;
 		return null;
 	}
 
