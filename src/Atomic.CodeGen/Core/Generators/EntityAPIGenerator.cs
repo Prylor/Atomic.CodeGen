@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Atomic.CodeGen.Core.Models;
 using Atomic.CodeGen.Utils;
 
-namespace Atomic.CodeGen.Core;
+namespace Atomic.CodeGen.Core.Generators;
 
 public sealed class EntityAPIGenerator
 {

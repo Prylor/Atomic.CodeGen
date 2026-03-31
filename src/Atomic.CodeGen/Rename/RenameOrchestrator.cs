@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Atomic.CodeGen.Core;
+using Atomic.CodeGen.Core.Generators;
 using Atomic.CodeGen.Core.Generators.EntityDomain;
 using Atomic.CodeGen.Core.Models;
 using Atomic.CodeGen.Core.Models.EntityDomain;
