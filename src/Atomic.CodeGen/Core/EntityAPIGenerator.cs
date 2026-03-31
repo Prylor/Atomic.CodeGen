@@ -209,11 +209,8 @@ public sealed class EntityAPIGenerator
 	{
 		sb.AppendLine();
 		sb.AppendLine($"{indent}///Values");
-		foreach (KeyValuePair<string, string> entry in _definition.Values)
+		foreach (var (fieldName, valueType) in _definition.Values)
 		{
-			entry.Deconstruct(out var key, out var value);
-			string fieldName = key;
-			string valueType = value;
 			string typeComment = (IsObjectType(valueType) ? "" : (" // " + valueType));
 			sb.AppendLine($"{indent}public static readonly int {fieldName};{typeComment}");
 		}
@@ -240,10 +237,8 @@ public sealed class EntityAPIGenerator
 				sb.AppendLine();
 			}
 			sb.AppendLine($"{bodyIndent}//Values");
-			foreach (KeyValuePair<string, string> entry in _definition.Values)
+			foreach (var (fieldName, _) in _definition.Values)
 			{
-				entry.Deconstruct(out var key, out var _);
-				string fieldName = key;
 				sb.AppendLine($"{bodyIndent}{fieldName} = NameToId(nameof({fieldName}));");
 			}
 		}

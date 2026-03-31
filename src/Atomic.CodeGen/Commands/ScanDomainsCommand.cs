@@ -74,9 +74,8 @@ public static class ScanDomainsCommand
 			AnsiConsole.Write(new Rule("[bold]Generating[/]"));
 			AnsiConsole.WriteLine();
 			int generated = 0;
-			foreach (KeyValuePair<string, EntityDomainDefinition> item2 in definitions)
+			foreach (var (_, definition) in definitions)
 			{
-				var (_, definition) = item2;
 				try
 				{
 					if (await new EntityDomainOrchestrator(definition, config).GenerateAsync())
