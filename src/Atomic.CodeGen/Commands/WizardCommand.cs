@@ -38,7 +38,7 @@ public static class WizardCommand
 		string solutionPath = FindSolutionFile(projectPath);
 		if (solutionPath == null)
 		{
-			AnsiConsole.MarkupLine("[yellow]No .sln file found in project directory.[/]");
+			AnsiConsole.MarkupLine("[yellow]No .sln/.slnx file found in project directory.[/]");
 			AnsiConsole.MarkupLine("[dim]Framework check skipped - will verify during code generation.[/]");
 			AnsiConsole.WriteLine();
 			string selectedAction = AnsiConsole.Prompt(
@@ -161,7 +161,9 @@ public static class WizardCommand
 
 	private static string? FindSolutionFile(string projectPath)
 	{
-		return Directory.GetFiles(projectPath, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault();
+		return Directory.GetFiles(projectPath, "*.sln", SearchOption.TopDirectoryOnly)
+			.Concat(Directory.GetFiles(projectPath, "*.slnx", SearchOption.TopDirectoryOnly))
+			.FirstOrDefault();
 	}
 
 	private static bool ShowWelcome()

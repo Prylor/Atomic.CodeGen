@@ -231,6 +231,8 @@ public sealed class SemanticDomainUsageFinder
 
 	public static string? FindSolutionFile(string projectRoot)
 	{
-		return Directory.GetFiles(projectRoot, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault();
+		return Directory.GetFiles(projectRoot, "*.sln", SearchOption.TopDirectoryOnly)
+			.Concat(Directory.GetFiles(projectRoot, "*.slnx", SearchOption.TopDirectoryOnly))
+			.FirstOrDefault();
 	}
 }

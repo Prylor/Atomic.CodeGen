@@ -125,7 +125,7 @@ public static class ConfigureCommand
 				}
 				else if (selectedOption.Contains("Scan Paths"))
 				{
-					config.ScanPaths = EditPathList("Scan Paths", config.ScanPaths, "Glob patterns for finding EntityAPI files (fallback when no .sln)");
+					config.ScanPaths = EditPathList("Scan Paths", config.ScanPaths, "Glob patterns for finding EntityAPI files (fallback when no .sln/.slnx)");
 					hasChanges = true;
 				}
 				else if (selectedOption.Contains("Exclude Paths"))
@@ -193,11 +193,13 @@ public static class ConfigureCommand
 		AnsiConsole.MarkupLine("[dim]Select which projects to include in analysis.[/]");
 		AnsiConsole.MarkupLine("[dim]Fewer projects = faster analysis (especially with Buildalyzer).[/]");
 		AnsiConsole.WriteLine();
-		string[] files = Directory.GetFiles(projectPath, "*.sln", SearchOption.TopDirectoryOnly);
+		string[] files = Directory.GetFiles(projectPath, "*.sln", SearchOption.TopDirectoryOnly)
+			.Concat(Directory.GetFiles(projectPath, "*.slnx", SearchOption.TopDirectoryOnly))
+			.ToArray();
 		if (files.Length == 0)
 		{
 			AnsiConsole.MarkupLine("[yellow]No solution file found in project directory.[/]");
-			AnsiConsole.MarkupLine("[dim]Project filtering requires a .sln file.[/]");
+			AnsiConsole.MarkupLine("[dim]Project filtering requires a .sln/.slnx file.[/]");
 			AnsiConsole.WriteLine();
 			AnsiConsole.MarkupLine("Press any key to continue...");
 			Console.ReadKey(intercept: true);
@@ -274,23 +276,40 @@ public static class ConfigureCommand
 	private static List<string> GetProjectsFromSolution(string solutionPath)
 	{
 		List<string> projectPaths = new List<string>();
-		string[] solutionLines = File.ReadAllLines(solutionPath);
-		foreach (string line in solutionLines)
+
+		if (solutionPath.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase))
 		{
-			if (!line.StartsWith("Project(") || !line.Contains(".csproj"))
+			System.Xml.Linq.XDocument doc = System.Xml.Linq.XDocument.Load(solutionPath);
+			foreach (System.Xml.Linq.XElement projectElement in doc.Descendants("Project"))
 			{
-				continue;
-			}
-			string[] segments = line.Split('"');
-			if (segments.Length >= 4)
-			{
-				string relativePath = segments[3];
-				if (!string.IsNullOrWhiteSpace(relativePath))
+				string path = projectElement.Attribute("Path")?.Value;
+				if (!string.IsNullOrWhiteSpace(path) && path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
 				{
-					projectPaths.Add(relativePath);
+					projectPaths.Add(path);
 				}
 			}
 		}
+		else
+		{
+			string[] solutionLines = File.ReadAllLines(solutionPath);
+			foreach (string line in solutionLines)
+			{
+				if (!line.StartsWith("Project(") || !line.Contains(".csproj"))
+				{
+					continue;
+				}
+				string[] segments = line.Split('"');
+				if (segments.Length >= 4)
+				{
+					string relativePath = segments[3];
+					if (!string.IsNullOrWhiteSpace(relativePath))
+					{
+						projectPaths.Add(relativePath);
+					}
+				}
+			}
+		}
+
 		return projectPaths.OrderBy((string p) => p).ToList();
 	}
 

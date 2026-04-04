@@ -124,7 +124,9 @@ public sealed class RenameOrchestrator
 
 	private static string? FindSolutionFile(string projectRoot)
 	{
-		return Directory.GetFiles(projectRoot, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault();
+		return Directory.GetFiles(projectRoot, "*.sln", SearchOption.TopDirectoryOnly)
+			.Concat(Directory.GetFiles(projectRoot, "*.slnx", SearchOption.TopDirectoryOnly))
+			.FirstOrDefault();
 	}
 
 	public async Task<RenameContext> CreateContextAsync(RenameType type, string oldName, string newName, string ownerName, string? ownerNamespace = null, bool renameSourceFile = false)

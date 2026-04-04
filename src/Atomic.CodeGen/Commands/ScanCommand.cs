@@ -120,6 +120,8 @@ public static class ScanCommand
 
 	private static string? FindSolutionFile(string projectPath)
 	{
-		return Directory.GetFiles(projectPath, "*.sln", SearchOption.TopDirectoryOnly).FirstOrDefault();
+		return Directory.GetFiles(projectPath, "*.sln", SearchOption.TopDirectoryOnly)
+			.Concat(Directory.GetFiles(projectPath, "*.slnx", SearchOption.TopDirectoryOnly))
+			.FirstOrDefault();
 	}
 }
