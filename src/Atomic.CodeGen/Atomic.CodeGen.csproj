@@ -15,7 +15,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>atomic-codegen</ToolCommandName>
     <PackageId>Atomic.CodeGen</PackageId>
-    <Version>2.5.0</Version>
+    <Version>2.5.1</Version>
     <Authors>Atomic Framework</Authors>
     <Description>Code generator for Atomic Entity Framework - generates extension methods from C# attribute definitions. Features auto-project detection, orphaned file cleanup, and cross-platform support.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
