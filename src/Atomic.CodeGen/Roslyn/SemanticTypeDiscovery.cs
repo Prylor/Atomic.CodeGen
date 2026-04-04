@@ -227,6 +227,10 @@ public sealed class SemanticTypeDiscovery : IDisposable
 				{
 					return true;
 				}
+				if (attributeFullName == shortName || attributeFullName == shortName + "Attribute")
+				{
+					return true;
+				}
 				if (hasUsing && (attributeFullName.EndsWith("." + shortName) || attributeFullName.EndsWith("." + shortName + "Attribute")))
 				{
 					return true;
