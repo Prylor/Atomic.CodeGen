@@ -16,20 +16,21 @@ public static class WizardCommand
 	public static Command Create()
 	{
 		Option<string> projectOption = new Option<string>(["--project", "-p"], () => Directory.GetCurrentDirectory(), "Path to project root");
-		Command command = new Command("wizard", "Interactive setup wizard - complete onboarding experience") { projectOption };
-		command.SetHandler(async (string projectPath) =>
+		Option<AnalyzerMode> analyzerOption = new Option<AnalyzerMode>(["--analyzer", "-a"], () => AnalyzerMode.Auto, "Analyzer mode (Auto, MSBuild, Buildalyzer)");
+		Command command = new Command("wizard", "Interactive setup wizard - complete onboarding experience") { projectOption, analyzerOption };
+		command.SetHandler(async (string projectPath, AnalyzerMode analyzerMode) =>
 		{
-			bool? frameworkCheckResult = await CheckAtomicFrameworkAsync(projectPath);
+			bool? frameworkCheckResult = await CheckAtomicFrameworkAsync(projectPath, analyzerMode);
 			if (frameworkCheckResult != false && (!frameworkCheckResult.HasValue || (ShowWelcome() && ShowFeatureEntityApi() && ShowFeatureBehaviours() && ShowFeatureEntityDomain() && ShowFeatureSmartRename())) && await ShowConfigurationWizard(projectPath) != null)
 			{
 				ShowIdeSetup();
 				ShowComplete(projectPath);
 			}
-		}, projectOption);
+		}, projectOption, analyzerOption);
 		return command;
 	}
 
-	private static async Task<bool?> CheckAtomicFrameworkAsync(string projectPath)
+	private static async Task<bool?> CheckAtomicFrameworkAsync(string projectPath, AnalyzerMode analyzerMode)
 	{
 		AnsiConsole.Clear();
 		AnsiConsole.Write(new FigletText("Atomic CodeGen").LeftJustified().Color(Color.Blue));
@@ -67,7 +68,7 @@ public static class WizardCommand
 		{
 			await AnsiConsole.Status().Spinner(Spinner.Known.Dots).StartAsync("Analyzing solution...", async (_) =>
 			{
-				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath);
+				using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath, analyzerMode);
 				(hasEntityApiAttribute, hasLinkToAttribute, hasEntityDomainBuilder) = await discovery.CheckAtomicFrameworkAsync();
 			});
 		}
