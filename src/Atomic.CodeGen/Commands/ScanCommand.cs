@@ -32,12 +32,18 @@ public static class ScanCommand
 		CodeGenConfig config = await ConfigLoader.LoadAsync(projectPath);
 		config.Verbose = verbose;
 		string solutionPath = FindSolutionFile(projectPath);
+		DiscoveryResult discoveryResult = null;
+
 		if (solutionPath != null)
 		{
 			Logger.LogInfo("Using Roslyn semantic analysis...");
 			Logger.LogInfo("");
 			using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath, config.AnalyzerMode, config.IncludedProjects);
-			DiscoveryResult discoveryResult = await discovery.DiscoverAllAsync(config.ExcludePaths);
+			discoveryResult = await discovery.DiscoverAllAsync(config.ExcludePaths);
+		}
+
+		if (discoveryResult != null && (discoveryResult.EntityApis.Count > 0 || discoveryResult.Behaviours.Count > 0 || discoveryResult.Domains.Count > 0))
+		{
 			if (discoveryResult.EntityApis.Count > 0)
 			{
 				AnsiConsole.Write(new Rule("[bold blue]Entity APIs[/]"));
@@ -92,7 +98,14 @@ public static class ScanCommand
 		}
 		else
 		{
-			Logger.LogInfo("No solution file found, using file scanning...");
+			if (solutionPath != null)
+			{
+				Logger.LogWarning("Semantic analysis found no definitions, falling back to file scanning...");
+			}
+			else
+			{
+				Logger.LogInfo("No solution file found, using file scanning...");
+			}
 			Logger.LogInfo("");
 			List<string> scannedFiles = new FileScanner(config).Scan();
 			Logger.LogInfo($"Scanning {scannedFiles.Count} files...");

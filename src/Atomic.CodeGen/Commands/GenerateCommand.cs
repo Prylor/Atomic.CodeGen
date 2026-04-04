@@ -94,9 +94,18 @@ public static class GenerateCommand
 			allBehaviours = result.Behaviours;
 			domainDefinitions = result.Domains;
 		}
-		else
+
+		if (solutionPath == null || (definitions.Count == 0 && domainDefinitions.Count == 0))
 		{
-			Logger.LogInfo("No solution file found, using file scanning...");
+			if (solutionPath != null)
+			{
+				Logger.LogWarning("Semantic analysis found no definitions, falling back to file scanning...");
+			}
+			else
+			{
+				Logger.LogInfo("No solution file found, using file scanning...");
+			}
+
 			List<string> scannedFiles = new FileScanner(config).Scan();
 			Logger.LogInfo($"Scanning {scannedFiles.Count} files...");
 

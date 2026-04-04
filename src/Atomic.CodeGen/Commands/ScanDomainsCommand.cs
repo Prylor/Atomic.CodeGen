@@ -37,7 +37,7 @@ public static class ScanDomainsCommand
 		}
 		CodeGenConfig config = await ConfigLoader.LoadAsync(projectPath);
 		string solutionPath = FindSolutionFile(projectPath);
-		Dictionary<string, EntityDomainDefinition> definitions;
+		Dictionary<string, EntityDomainDefinition> definitions = new Dictionary<string, EntityDomainDefinition>();
 		if (solutionPath != null)
 		{
 			Logger.LogInfo("Using Roslyn semantic analysis...");
@@ -45,9 +45,16 @@ public static class ScanDomainsCommand
 			using SemanticTypeDiscovery discovery = new SemanticTypeDiscovery(solutionPath, config.AnalyzerMode, config.IncludedProjects);
 			definitions = await discovery.DiscoverDomainsAsync(config.ExcludePaths);
 		}
-		else
+		if (definitions.Count == 0)
 		{
-			Logger.LogInfo("No solution file found, using file scanning...");
+			if (solutionPath != null)
+			{
+				Logger.LogWarning("Semantic analysis found no definitions, falling back to file scanning...");
+			}
+			else
+			{
+				Logger.LogInfo("No solution file found, using file scanning...");
+			}
 			definitions = await EntityDomainScanner.ScanAsync(config);
 		}
 		if (definitions.Count == 0)
